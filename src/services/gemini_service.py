@@ -241,7 +241,7 @@ class GeminiVisionService:
         client = _get_gemini_client(self.custom_api_key)
 
         prompt = (
-            "You are an Indian math teacher. Look at this image.\n\n"
+            "You are an expert mathematics tutor. Look at this image.\n\n"
             "IMPORTANT DOMAIN RULE: If the image does NOT contain a math problem, physics problem, or quantitative concept, you MUST ignore the steps below and respond exactly with: REJECTED: This image does not appear to contain a math problem. Please upload a picture of a math question.\n\n"
             "Step 1: Extract the math problem from the image.\n"
             "Step 2: Solve it step-by-step in whiteboard style.\n\n"

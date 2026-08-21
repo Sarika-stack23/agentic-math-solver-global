@@ -1,8 +1,8 @@
 """
 Planner Agent (Google ADK)
 
-Responsible for classifying the incoming query into a problem type and 
-target educational class.
+Responsible for classifying the incoming query into a problem type,
+education level, and math topic.
 """
 
 import logging
@@ -22,22 +22,24 @@ except ImportError:
             self.instructions = instructions
             self.llm = llm
             
-logger = logging.getLogger("math_assistant.agents.planner")
+logger = logging.getLogger("math_tutor.agents.planner")
 
 class PlannerAgent(Agent):
-    """Classifies math problems into type and class level."""
+    """Classifies math problems into type, education level, and topic."""
     
     def __init__(self):
         super().__init__(
             name="PlannerAgent",
-            description="Analyzes mathematical queries to classify them by type and class level.",
+            description="Analyzes mathematical queries to classify them by type, education level, and topic.",
             instructions=(
                 "You are an expert curriculum analyzer. Your job is to classify the given "
                 "mathematical query.\n"
-                "Return ONLY a valid JSON object with two keys:\n"
-                "- 'type': A string representing the question type (e.g., 'ncert_exercise', 'concept_explanation', 'jee_advanced').\n"
-                "- 'class': An integer representing the target class level (e.g., 6, 8, 10, 11, 12). If unknown, use 10.\n"
-                "Example output: {\"type\": \"ncert_exercise\", \"class\": 10}"
+                "Return ONLY a valid JSON object with these keys:\n"
+                "- 'type': A string representing the question type (e.g., 'exercise', 'concept_explanation', 'word_problem', 'proof', 'computation').\n"
+                "- 'level': A string representing the education level: 'middle_school', 'high_school', 'college', or 'university'. If unknown, use 'high_school'.\n"
+                "- 'topic': A string representing the math topic: 'arithmetic', 'algebra', 'geometry', 'trigonometry', 'calculus', 'probability', 'statistics', 'linear_algebra', 'coordinate_geometry', or 'number_theory'. If unknown, use 'algebra'.\n"
+                "- 'class': An integer representing the approximate class level (e.g., 6, 8, 10, 11, 12). If unknown, use 10.\n"
+                'Example output: {"type": "exercise", "level": "high_school", "topic": "algebra", "class": 10}'
             )
         )
         self.llm = _get_llm()
@@ -58,10 +60,16 @@ class PlannerAgent(Agent):
             # Extract JSON from response
             match = re.search(r'\{.*\}', content, re.DOTALL)
             if match:
-                return json.loads(match.group(0))
+                result = json.loads(match.group(0))
+                # Ensure backwards compatibility
+                if "level" not in result:
+                    result["level"] = "high_school"
+                if "topic" not in result:
+                    result["topic"] = "algebra"
+                return result
             
-            return {"type": "unknown", "class": 10}
+            return {"type": "unknown", "level": "high_school", "topic": "algebra", "class": 10}
             
         except Exception as e:
             logger.error(f"Planner failed: {e}")
-            return {"type": "unknown", "class": 10}
+            return {"type": "unknown", "level": "high_school", "topic": "algebra", "class": 10}

@@ -78,9 +78,45 @@ class Settings(BaseSettings):
     environment: str = "development"
     log_level: str = "INFO"
 
+    # ── Internationalization ───────────────────────────────────────────
+    default_language: str = "en"
+    supported_languages: List[str] = ["en"]  # Future: es, fr, de, pt, hi
+
 
 # Singleton settings instance
 settings = Settings()
+
+# ── Education Levels & Curricula ───────────────────────────────────────
+EDUCATION_LEVELS = [
+    "middle_school",
+    "high_school",
+    "college",
+    "university",
+    "other",
+]
+
+SUPPORTED_CURRICULA = [
+    "general",
+    "ncert",
+    "gcse",
+    "ap",
+    "ib",
+    "college",
+    "custom",
+]
+
+MATH_TOPICS = [
+    "arithmetic",
+    "algebra",
+    "geometry",
+    "trigonometry",
+    "calculus",
+    "probability",
+    "statistics",
+    "linear_algebra",
+    "coordinate_geometry",
+    "number_theory",
+]
 
 def setup_logging():
     import logging
@@ -112,13 +148,13 @@ setup_logging()
 
 
 # ── System Prompt Template ─────────────────────────────────────────────
-# Extracted from main.py L404-L522. This is the master prompt template
-# used by MathAIEngine to instruct the LLM on response format.
+# Globally-positioned math tutor prompt. Not tied to any specific country
+# or curriculum. The system adapts to the student's chosen level.
 
 SYSTEM_TEMPLATE = r"""
-You are an elite Indian mathematics teacher for Class 6 to 12 and JEE aspirants.
+You are an expert mathematics tutor helping students worldwide.
 Your goal is to explain math concepts and solve problems step-by-step.
-If a user asks a non-math question, reply ONLY: "❌ I only teach math! Ask me any math problem."
+If a user asks a non-math question, reply ONLY: "❌ I only help with math! Ask me any math problem."
 Stop immediately. Nothing else.
 
 ════════════════════════════════════════
@@ -195,32 +231,29 @@ INSIDE EACH STEP — RULES:
    - History or background ("This property was discovered...")
 
 ════════════════════════════════════════
-DETECT LEVEL — CHANGE DEPTH NOT STYLE:
+ADAPT TO STUDENT LEVEL:
 ════════════════════════════════════════
 
-Class 1–5:
+Middle School:
 → Ultra simple. Real objects. ("3 apples + 4 apples = 7 apples")
 → No jargon. Max 3 steps.
 → Lots of ✓ and encouragement inline.
 
-Class 6–8:
-→ Short friendly lines. Explain WHY in 3-4 words inline.
-→ "← because negative × negative = positive"
-
-Class 9–10:
+High School:
 → Full working, every line shown.
-→ One inline note on common exam mistake.
-→ "← board exams always ask this"
+→ One inline note on common mistakes.
+→ "← this is where many students go wrong"
 
-Class 11–12:
+College / University:
 → State theorem/formula name once, then just use it.
 → Show every substitution clearly.
+→ Can include more rigorous notation.
 
-JEE Advanced:
+Advanced:
 → Full clean solution first.
 → Then add:
    💡 Key Insight: [one line — the clever observation]
-   ⏱️ Exam Tip: [one line — what to write quickly]
+   ⏱️ Quick tip: [one line — what to compute fast]
 
 ════════════════════════════════════════
 SYMBOLS — STRICT:
@@ -229,7 +262,6 @@ SYMBOLS — STRICT:
 → USE LaTeX math mode ($...$ for inline, $$...$$ for block) for all mathematical expressions.
 → Example: $x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$
 → Use proper LaTeX symbols (e.g. \sqrt, \pi, \pm, \int)
-→ Hindi/Hinglish question → answer in same language
 
 Context from knowledge base:
 {context}

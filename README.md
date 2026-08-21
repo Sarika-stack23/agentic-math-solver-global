@@ -1,349 +1,216 @@
-<div align="center">
+# 🧮 AI Math Tutor
 
-  <img src="https://img.icons8.com/3d-fluency/94/calculator.png" width="80" alt="Agentic Math Solver Logo" />
+**AI-powered math tutoring for students worldwide.** Solve problems, get verified step-by-step solutions, check your work, and practice with personalized exercises.
 
-  # 🧮 Agentic Math Solver
-
-  **A multi-agent AI mathematics tutor with LangGraph orchestration, MCP tooling, and a premium React UI — built for students, powered by Gemini & Groq.**
-
-  [![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-Vercel-000?style=for-the-badge&logo=vercel)](https://advanced-math-ai.vercel.app)
-  [![API Docs](https://img.shields.io/badge/📡_API-Hugging_Face-yellow?style=for-the-badge&logo=huggingface)](https://false45-math-api.hf.space/docs)
-  [![License: MIT](https://img.shields.io/badge/License-MIT-A855F7?style=for-the-badge)](LICENSE)
-  [![Python 3.9+](https://img.shields.io/badge/Python-3.9+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
-  [![React 19](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=white)](https://react.dev)
-  [![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-  [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](Dockerfile)
-  [![Tests](https://img.shields.io/badge/Tests-19_Suites-22C55E?style=for-the-badge&logo=pytest&logoColor=white)](tests/)
-
-</div>
-
-<br />
-
-<div align="center">
-  <strong>
-    <a href="#-features">Features</a> · 
-    <a href="#-architecture">Architecture</a> · 
-    <a href="#-tech-stack">Tech Stack</a> · 
-    <a href="#-screenshots">Screenshots</a> · 
-    <a href="#-getting-started">Getting Started</a> · 
-    <a href="#-roadmap">Roadmap</a> · 
-    <a href="#-contributing">Contributing</a>
-  </strong>
-</div>
-
-<br />
+[![CI/CD Pipeline](https://github.com/Sarika-stack23/agentic-math-solver-global/actions/workflows/ci.yml/badge.svg)](https://github.com/Sarika-stack23/agentic-math-solver-global/actions)
 
 ---
 
-## ✨ Features
+## What It Does
 
-| | Feature | Description |
-| :---: | :--- | :--- |
-| 🧠 | **Intelligent Math Chat** | Real-time AI tutor with step-by-step reasoning. Renders complex equations perfectly via LaTeX (KaTeX). Powered by a LangGraph multi-agent pipeline with plan → solve → verify → format stages. |
-| 📸 | **Multimodal Input** | Upload PDFs or use your camera to scan handwritten math problems. Google Gemini Vision extracts and solves them instantly. |
-| 📚 | **NCERT Quiz Engine** | Interactive MCQs for Class 9–10 students powered by **Qdrant Vector DB** and **RAG** (Retrieval-Augmented Generation). |
-| 📐 | **Symbolic Math Engine** | Dedicated SymPy computation engine — differentiate, integrate, find roots, and plot 2D function graphs dynamically. |
-| 📈 | **Progress Dashboard** | Tracks streaks, accuracy, and weak topics with **Firebase Auth** + a live **Recharts** line graph. |
-| 🔗 | **MCP Tool Servers** | 6 sandboxed Model Context Protocol servers (SymPy, Calculator, Graph Plotter, Python Executor, Image Solver, PDF Reader) give the AI real computation power instead of hallucinating math. |
-| 🎨 | **Premium UI/UX** | Dark-mode-first React SPA with glassmorphism, micro-animations, and mobile-responsive design via Vite. |
+| Feature | Description |
+|---------|-------------|
+| **Solve & Verify** | Multi-agent pipeline: Planner → Solver → Verifier → Formatter. Every solution is checked. |
+| **Check My Work** | Submit your own solution — the tutor finds your first mistake, explains why, and suggests how to fix it. |
+| **Hint Mode** | 4-level progressive hints: gentle nudge → formula → approach → full solution. |
+| **Teach Me** | Socratic guided learning — the tutor asks questions, never gives the answer directly. |
+| **Why?** | Tap "Why?" on any step to get a plain-English explanation. |
+| **Another Method** | Request a genuinely different approach to the same problem. |
+| **Practice** | Generate similar problems at easier/same/harder difficulty. Topic-based practice. |
+| **Progress Tracking** | Streaks, accuracy, weak topic detection, activity heatmap, personalized recommendations. |
+| **Image Input** | Upload a photo or scan handwritten math — AI extracts and solves. |
+| **PDF Upload** | Upload a textbook PDF, then ask questions about it using RAG. |
+| **NCERT Practice** | Structured practice from NCERT textbooks (Class 6–12). |
 
 ---
 
-## 🏗 Architecture
+## Architecture
 
-The system uses **LangGraph** for stateful multi-agent orchestration, with **Google ADK agents** as specialized reasoning nodes and **MCP servers** as sandboxed tool backends.
-
-```mermaid
-graph TD
-    %% ─── Frontend ───────────────────────────────────────────────
-    Client["🖥️ React SPA<br/>(Vite + TypeScript)"]
-
-    %% ─── API Gateway ────────────────────────────────────────────
-    subgraph API["⚡ API Layer"]
-        FastAPI["FastAPI Gateway"]
-        Auth["Firebase Auth<br/>Middleware"]
-    end
-
-    %% ─── LangGraph Orchestrator ─────────────────────────────────
-    subgraph Orchestration["🔄 LangGraph State Machine"]
-        Planner["📋 Planner Node"]
-        RAG["📖 RAG Node"]
-        Memory["🧠 Memory Node"]
-        Solver["🔧 Solver Node"]
-        Verifier["✅ Verifier Node"]
-        Formatter["🎨 Format Node"]
-    end
-
-    %% ─── Data Stores ────────────────────────────────────────────
-    subgraph Storage["💾 Storage"]
-        Firestore[("Firestore")]
-        Qdrant[("Qdrant<br/>Vector DB")]
-    end
-
-    %% ─── MCP Tool Servers ───────────────────────────────────────
-    subgraph MCP["🔌 MCP Tool Servers"]
-        SymPy["SymPy MCP"]
-        Calc["Calculator MCP"]
-        GraphPlot["Graph Plotter MCP"]
-        PyExec["Python Sandbox MCP"]
-        ImgSolver["Image Solver MCP"]
-        PDFReader["PDF Reader MCP"]
-    end
-
-    %% ─── Connections ────────────────────────────────────────────
-    Client -- "SSE Stream" --> FastAPI
-    FastAPI --> Auth
-    FastAPI --> Planner
-
-    Planner --> RAG
-    Planner --> Memory
-    RAG --> Solver
-    Memory --> Solver
-    Solver --> Verifier
-    Verifier -- "❌ Retry" --> Solver
-    Verifier -- "✅ Pass" --> Formatter
-    Formatter --> Client
-
-    Memory -.-> Firestore
-    RAG -.-> Qdrant
-
-    Solver --> SymPy
-    Solver --> Calc
-    Solver --> GraphPlot
-    Solver --> PyExec
-    Solver --> ImgSolver
-    Solver --> PDFReader
+```
+┌─────────────────────────────────────────────────────────┐
+│                  React + Vite Frontend                   │
+│  ┌──────┐ ┌───────┐ ┌──────────┐ ┌────────┐ ┌────────┐ │
+│  │ Home │ │ Solve │ │ Practice │ │Progress│ │Settings│ │
+│  └──────┘ └───────┘ └──────────┘ └────────┘ └────────┘ │
+└────────────────────────┬────────────────────────────────┘
+                         │ REST + SSE
+┌────────────────────────┴────────────────────────────────┐
+│                  FastAPI Backend                         │
+│  ┌────────────────────────────────────────────────────┐  │
+│  │  LangGraph Pipeline                                │  │
+│  │  Classify → Retrieve (RAG) → Solve → Verify → Fmt │  │
+│  └────────────────────────────────────────────────────┘  │
+│  ┌──────────┐ ┌──────┐ ┌───────┐ ┌──────────┐          │
+│  │Check Work│ │Hints │ │ Teach │ │ Practice │          │
+│  └──────────┘ └──────┘ └───────┘ └──────────┘          │
+│  ┌────────────────────────────────────────────────────┐  │
+│  │  MCP Tool Servers                                  │  │
+│  │  SymPy · Calculator · Graph · Python · Vision · PDF│  │
+│  └────────────────────────────────────────────────────┘  │
+└────────────────────────┬────────────────────────────────┘
+                         │
+         ┌───────────────┼───────────────┐
+         │               │               │
+    ┌────┴───┐    ┌──────┴──────┐   ┌────┴───┐
+    │Gemini  │    │  Firebase   │   │ Qdrant │
+    │(Free)  │    │ Auth + DB   │   │(Memory)│
+    └────────┘    └─────────────┘   └────────┘
 ```
 
-> **How it works:** The user's question enters the LangGraph state machine. The **Planner** classifies it, the **RAG** and **Memory** nodes fetch relevant context in parallel, the **Solver** generates a solution using MCP tools for real computation, the **Verifier** checks correctness (retrying up to 3× if wrong), and the **Formatter** adds LaTeX styling before streaming back to the client.
+---
+
+## Tech Stack
+
+| Layer | Technology | Cost |
+|-------|-----------|------|
+| **Frontend** | React 19, Vite, TypeScript, KaTeX, Recharts | Free |
+| **Backend** | FastAPI, LangGraph, Python 3.11 | Free |
+| **Primary LLM** | Google Gemini 2.0 Flash (Google AI Studio) | Free tier |
+| **Fallback LLM** | Groq (Llama 3.3 70B) | Free tier |
+| **Math Engine** | SymPy, NumPy, SciPy, Matplotlib | Open source |
+| **Vector DB** | Qdrant (in-memory) | Free |
+| **Auth & DB** | Firebase Auth + Firestore | Free tier |
+| **Hosting** | Vercel (frontend) + HuggingFace Spaces (backend) | Free tier |
+
+**Total cost: $0/month** — All services run on free tiers.
 
 ---
 
-## 💻 Tech Stack
-
-### Frontend
-![React](https://img.shields.io/badge/React_19-20232A?style=flat-square&logo=react&logoColor=61DAFB)
-![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat-square&logo=typescript&logoColor=white)
-![Vite](https://img.shields.io/badge/Vite-B73BFE?style=flat-square&logo=vite&logoColor=FFD62E)
-![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=flat-square&logo=firebase&logoColor=white)
-![Vercel](https://img.shields.io/badge/Vercel-000?style=flat-square&logo=vercel&logoColor=white)
-
-- **KaTeX** — LaTeX math rendering
-- **Recharts** — interactive data visualization
-- **Lucide React** — modern icon library
-- **React Markdown** — rich text formatting
-
-### Backend
-![Python](https://img.shields.io/badge/Python_3.9+-3776AB?style=flat-square&logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-2CA5E0?style=flat-square&logo=docker&logoColor=white)
-![LangChain](https://img.shields.io/badge/LangChain-1C3C3C?style=flat-square&logo=langchain&logoColor=white)
-
-- **LangGraph** — multi-agent state machine orchestration
-- **Google ADK** — agent development kit for specialized reasoning
-- **Gemini 2.5 Flash** — primary LLM (multimodal)
-- **Groq (Llama 3.3 70B)** — fast inference fallback
-- **SymPy** — symbolic mathematics engine
-- **Qdrant** — vector database for NCERT RAG
-- **Firebase Admin** — Firestore + Auth
-
-### DevOps
-![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=flat-square&logo=githubactions&logoColor=white)
-![Hugging Face](https://img.shields.io/badge/Hugging_Face-FFD21E?style=flat-square&logo=huggingface&logoColor=000)
-
-- **CI/CD** — GitHub Actions with automated testing
-- **Backend Hosting** — Hugging Face Spaces (Docker)
-- **Frontend Hosting** — Vercel
-- **Containerization** — Docker + Docker Compose
-
----
-
-## 📸 Screenshots
-
-<div align="center">
-  <table>
-    <tr>
-      <td align="center"><b>💬 AI Chat (Math Solving)</b><br/><img src="screenshots/chat_solving.png" width="400" alt="AI Chat Solving" /></td>
-      <td align="center"><b>📚 NCERT Quiz Engine</b><br/><img src="screenshots/ncert_quiz.png" width="400" alt="NCERT Quiz Engine" /></td>
-    </tr>
-    <tr>
-      <td align="center"><b>📐 Interactive Graphing (SymPy)</b><br/><img src="screenshots/graphing.png" width="400" alt="Interactive Graphing" /></td>
-      <td align="center"><b>📊 Learning Dashboard</b><br/><img src="screenshots/dashboard.png" width="400" alt="Learning Dashboard" /></td>
-    </tr>
-  </table>
-</div>
-
-
----
-
-## 🚀 Getting Started
+## Quick Start
 
 ### Prerequisites
+- Python 3.11+
+- Node.js 22+
+- A Gemini API key ([get one free](https://aistudio.google.com/apikey))
 
-- **Python 3.9+** and pip
-- **Node.js 18+** and npm
-- **Docker** (optional)
-
-### Option 1 — Docker Compose (Recommended)
+### 1. Clone & Setup
 
 ```bash
-# Clone the repository
-git clone https://github.com/Sarika-stack23/agentic-math-solver.git
-cd agentic-math-solver
+git clone https://github.com/Sarika-stack23/agentic-math-solver-global.git
+cd agentic-math-solver-global
+```
+
+### 2. Backend
+
+```bash
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate
+
+# Install dependencies
+pip install -r backend/requirements.txt
 
 # Configure environment
 cp .env.example .env
-# Edit .env with your API keys (GEMINI_API_KEY, GROQ_API_KEY, etc.)
+# Edit .env and add your GEMINI_API_KEY
 
-# Start all services
-docker compose up --build
+# Run the backend
+uvicorn backend.src.main:app --host 0.0.0.0 --port 8080 --reload
 ```
 
-| Service | URL |
-| :--- | :--- |
-| Backend API | `http://localhost:8080` |
-| API Docs (Swagger) | `http://localhost:8080/docs` |
-| Frontend | `http://localhost:5173` |
-
-### Option 2 — Local Development
-
-#### Backend
-
-```bash
-cd backend
-python3 -m venv venv
-source venv/bin/activate        # macOS/Linux
-# venv\Scripts\activate         # Windows
-
-pip install -r requirements.txt
-
-# Configure environment
-cp ../.env.example ../.env
-# Edit .env with your API keys
-
-uvicorn src.main:app --reload --port 8080
-```
-
-#### Frontend
+### 3. Frontend
 
 ```bash
 cd frontend
-npm install
+npm install --legacy-peer-deps
 
-# Create frontend .env
+# Configure API URL
 echo "VITE_API_URL=http://localhost:8080" > .env
 
+# Run the frontend
 npm run dev
 ```
 
-### Environment Variables
+### 4. Docker (Alternative)
 
-| Variable | Required | Description |
-| :--- | :---: | :--- |
-| `GEMINI_API_KEY` | ✅ | [Google AI Studio](https://aistudio.google.com/apikey) — free tier available |
-| `GROQ_API_KEY` | ✅ | [Groq Console](https://console.groq.com/keys) — free tier available |
-| `USE_GEMINI` | — | Set to `true` to use Gemini as primary model (default: `true`) |
-| `USE_FIREBASE` | — | Set to `true` to enable Firebase Auth + Firestore |
-| `FIREBASE_CREDENTIALS_PATH` | — | Path to Firebase Admin SDK JSON file |
+```bash
+docker compose up --build
+```
+
+Visit `http://localhost:5173` — the app is ready.
 
 ---
 
-## 📁 Directory Structure
+## API Endpoints
 
-```text
-agentic-math-solver/
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/v1/chat/stream` | Solve a problem (SSE streaming) |
+| `POST` | `/api/v1/check-work` | Check student's solution |
+| `POST` | `/api/v1/check-work/image` | Check handwritten solution |
+| `POST` | `/api/v1/hints` | Get progressive hints (levels 1-4) |
+| `POST` | `/api/v1/teach` | Socratic teaching mode |
+| `POST` | `/api/v1/practice/generate` | Generate practice problems |
+| `POST` | `/api/v1/practice/daily` | Daily practice based on weak topics |
+| `POST` | `/api/v1/practice/mistakes/record` | Record a mistake |
+| `GET`  | `/api/v1/practice/mistakes` | Get mistakes for review |
+| `POST` | `/api/v1/vision/extract` | Extract math from image |
+| `POST` | `/api/v1/documents/upload` | Upload and index a PDF |
+| `GET`  | `/api/v1/progress` | Get learning progress |
+| `GET`  | `/api/v1/quiz/structure` | Get NCERT quiz tree |
+| `GET`  | `/health` | Health check |
+
+---
+
+## Project Structure
+
+```
+agentic-math-solver-global/
 ├── backend/
 │   ├── src/
-│   │   ├── agents/           # ADK agent definitions (Planner, Solver, Verifier, etc.)
-│   │   ├── api/              # FastAPI routes (chat, progress, quiz, vision)
-│   │   ├── graph/            # LangGraph state machine orchestration
-│   │   ├── math/             # Symbolic math engine (SymPy)
-│   │   ├── services/         # Qdrant, Firebase, and external service connectors
-│   │   ├── config.py         # Centralized configuration
-│   │   └── main.py           # FastAPI application entrypoint
-│   ├── knowledge-base/       # NCERT markdown files for RAG retrieval
-│   ├── Dockerfile            # Backend container image
-│   └── requirements.txt      # Python dependencies
-│
+│   │   ├── agents/          # ADK agents (Planner, Solver, Verifier, Formatter)
+│   │   ├── api/v1/          # REST endpoints (chat, check_work, hints, teach, practice, ...)
+│   │   ├── graph/           # LangGraph pipeline + state
+│   │   ├── math/            # SymPy engine, graph utils, knowledge indexer
+│   │   ├── services/        # Gemini, Firebase, Qdrant, embeddings
+│   │   ├── config.py        # Central configuration
+│   │   └── main.py          # FastAPI app
+│   ├── knowledge-base/      # NCERT + JEE content (markdown)
+│   ├── requirements.txt
+│   └── Dockerfile
 ├── frontend/
 │   ├── src/
-│   │   ├── components/       # React components (Chat, Quiz, Graphing, Dashboard)
-│   │   ├── context/          # Firebase Auth state management
-│   │   ├── App.tsx           # Main application shell
-│   │   └── index.css         # Glassmorphism UI styles
-│   ├── vercel.json           # Vercel SPA routing config
-│   └── package.json          # Node dependencies
-│
-├── mcp-servers/              # Model Context Protocol tool servers
-│   ├── calculator-mcp/       # Basic arithmetic operations
-│   ├── graph-plotter-mcp/    # 2D function graph generation
-│   ├── image-solver-mcp/     # Gemini Vision image processing
-│   ├── pdf-reader-mcp/       # PDF text extraction
-│   ├── python-executor-mcp/  # Sandboxed Python code execution
-│   └── sympy-mcp/            # Symbolic math computation
-│
-├── tests/                    # 19 test suites (pytest)
-├── docs/                     # Architecture documentation
-├── screenshots/              # UI screenshots (dark & light mode)
-├── .github/workflows/        # CI/CD pipeline
-├── docker-compose.yml        # Multi-service orchestration
-├── render.yaml               # Render.com deployment config
-├── .env.example              # Environment variable template
-├── CONTRIBUTING.md            # Contribution guidelines
-├── CHANGELOG.md              # Version history
-└── LICENSE                   # MIT License
+│   │   ├── components/      # React components (Chat, Home, Practice, Dashboard, ...)
+│   │   ├── context/         # Auth context
+│   │   ├── i18n/            # Internationalization (en.json)
+│   │   ├── App.tsx          # Root component + routing
+│   │   └── index.css        # Design system
+│   ├── package.json
+│   └── index.html
+├── mcp-servers/             # 6 MCP tool servers
+├── tests/                   # Backend test suite
+├── docker-compose.yml
+├── .env.example
+└── README.md
 ```
 
 ---
 
-## 🗺 Roadmap
+## Internationalization
 
-- [x] Multi-agent LangGraph orchestration pipeline
-- [x] MCP tool server integration (6 servers)
-- [x] Multimodal input (camera + PDF)
-- [x] NCERT RAG quiz engine with Qdrant
-- [x] Firebase Auth + progress tracking dashboard
-- [x] Premium dark-mode-first UI with glassmorphism
-- [x] Docker containerization + CI/CD pipeline
-- [x] Deployed to Vercel (frontend) + Hugging Face (backend)
-- [ ] Voice input for math questions (Web Speech API)
-- [ ] Multi-language support (Hindi, Spanish, French)
-- [ ] Collaborative study rooms (WebSocket)
-- [ ] Export solutions to PDF
-- [ ] Spaced repetition algorithm for quiz scheduling
-- [ ] Parent/teacher dashboard with student analytics
+All UI strings are centralized in `frontend/src/i18n/en.json`. The architecture supports adding new languages by:
+1. Creating a new translation file (e.g., `es.json`)
+2. Importing it in `frontend/src/i18n/index.ts`
+
+Currently supported: **English**. Prepared for: Spanish, French, German, Portuguese, Hindi.
 
 ---
 
-## 🤝 Contributing
+## Running Tests
 
-Contributions are welcome! Please read the [Contributing Guide](CONTRIBUTING.md) for details on:
+```bash
+# Backend tests
+pytest tests/ -v --tb=short
 
-- Setting up your development environment
-- Code style guidelines
-- Pull request process
-- Bug reports and feature requests
+# Frontend type check
+cd frontend && npx tsc -b --noEmit
 
----
-
-## 📄 License
-
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
+# Frontend build
+cd frontend && npm run build
+```
 
 ---
 
-<div align="center">
+## License
 
-  **[⬆ Back to Top](#-agentic-math-solver)**
-
-  <br />
-
-  Built with ❤️ for students learning mathematics.
-
-  <br />
-
-  <a href="https://advanced-math-ai.vercel.app">
-    <img src="https://img.shields.io/badge/Try_the_Live_Demo-000?style=for-the-badge&logo=vercel&logoColor=white" alt="Try Live Demo" />
-  </a>
-
-</div>
+MIT

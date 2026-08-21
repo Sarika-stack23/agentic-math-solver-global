@@ -13,7 +13,7 @@ from backend.src.agents.verifier import VerifierAgent
 from backend.src.agents.formatter import FormatterAgent
 from backend.src.services.memory_service import FirestoreChatMemory
 
-logger = logging.getLogger("math_assistant.graph.nodes")
+logger = logging.getLogger("math_tutor.graph.nodes")
 
 # Lazy initialization of agents
 _agents = {}
@@ -30,6 +30,8 @@ def classify_node(state: MathAgentState) -> dict:
     return {
         "question_type": plan.get("type", "unknown"),
         "class_level": plan.get("class", 10),
+        "education_level": plan.get("level", "high_school"),
+        "topic": plan.get("topic", "algebra"),
         "retries": 0  # initialize retries
     }
 
@@ -64,10 +66,23 @@ def verify_node(state: MathAgentState) -> dict:
     """Verify the generated solution."""
     verifier = _get_agent(VerifierAgent, "verifier")
     verification = verifier.verify(state["user_query"], state["raw_solution"])
+    
+    is_correct = verification.get("is_correct", True)
+    retries = state.get("retries", 0) + 1
+    
+    # Determine verification status
+    if is_correct:
+        verification_status = "verified"
+    elif retries >= 2:
+        verification_status = "unverified"  # Max retries reached, couldn't fully verify
+    else:
+        verification_status = "failed"  # Will retry
+    
     return {
-        "is_correct": verification.get("is_correct", True),
+        "is_correct": is_correct,
         "verification_feedback": verification.get("feedback", ""),
-        "retries": state.get("retries", 0) + 1
+        "verification_status": verification_status,
+        "retries": retries
     }
 
 def format_node(state: MathAgentState) -> dict:

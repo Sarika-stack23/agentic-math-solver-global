@@ -1,0 +1,235 @@
+{
+  "app": {
+    "name": "AI Math Tutor",
+    "tagline": "Solve. Verify. Understand. Practice.",
+    "description": "Your AI-powered math tutor that solves and verifies problems, teaches the reasoning, checks your work, and turns mistakes into practice."
+  },
+  "nav": {
+    "home": "Home",
+    "solve": "Solve",
+    "practice": "Practice",
+    "history": "History",
+    "progress": "Progress",
+    "settings": "Settings",
+    "signOut": "Sign out"
+  },
+  "home": {
+    "headline": "Solve any math problem.",
+    "subheadline": "Get verified solutions, step-by-step explanations, and personalized practice.",
+    "typeProblem": "Type a problem",
+    "uploadImage": "Upload Image",
+    "takePhoto": "Take Photo",
+    "uploadPdf": "Upload PDF",
+    "quickActions": {
+      "practice": "Practice",
+      "history": "History",
+      "progress": "Progress"
+    },
+    "suggestions": [
+      "Solve a quadratic equation",
+      "Explain limits in calculus",
+      "Help with trigonometry",
+      "Find the derivative of x²+3x"
+    ]
+  },
+  "solve": {
+    "placeholder": "Type your math problem...",
+    "send": "Send",
+    "attachments": {
+      "scanMath": "Scan Math",
+      "uploadImage": "Upload Image",
+      "uploadPdf": "Upload PDF"
+    },
+    "loading": {
+      "reading": "Reading problem...",
+      "planning": "Planning solution...",
+      "solving": "Solving...",
+      "checking": "Checking answer...",
+      "preparing": "Preparing explanation..."
+    },
+    "actions": {
+      "why": "Why?",
+      "anotherMethod": "Another Method",
+      "checkMyWork": "Check My Work",
+      "hint": "Give me a hint",
+      "teachMe": "Teach me (don't solve)",
+      "similarProblem": "Similar Problem",
+      "explainSimpler": "Explain simpler",
+      "quizMe": "Quiz me"
+    },
+    "verification": {
+      "verified": "✓ Verified solution",
+      "checkedMathematically": "✓ Checked mathematically",
+      "unverified": "Solution generated (not fully verified)",
+      "retryNote": "This solution was refined after verification feedback."
+    },
+    "errors": {
+      "generic": "Something went wrong while solving this problem. Please try again.",
+      "imageUnreadable": "I couldn't read the image clearly. Try uploading a clearer image.",
+      "unsolvable": "I couldn't solve this problem yet. Try rephrasing it.",
+      "connectionFailed": "Unable to connect to the server. Please check your connection.",
+      "rateLimited": "You've made too many requests. Please wait a moment and try again."
+    }
+  },
+  "checkWork": {
+    "title": "Check My Work",
+    "subtitle": "Submit your solution and I'll find where you went wrong.",
+    "problemLabel": "The problem:",
+    "solutionLabel": "Your solution:",
+    "solutionPlaceholder": "Paste or type your solution steps here...",
+    "uploadWork": "Upload handwritten work",
+    "check": "Check My Work",
+    "result": {
+      "correct": "✓ Your solution is correct! Great work.",
+      "stepCorrect": "✓ Correct",
+      "stepIncorrect": "✗ Error here",
+      "firstError": "First mistake found:",
+      "whyWrong": "Why this is wrong:",
+      "howToFix": "How to fix it:",
+      "concept": "Key concept:"
+    }
+  },
+  "hints": {
+    "title": "Hint Mode",
+    "getHint": "Get a Hint",
+    "nextHint": "Need another hint?",
+    "showSolution": "Show full solution",
+    "hintLevel": "Hint {level} of {total}"
+  },
+  "teach": {
+    "title": "Teach Me",
+    "subtitle": "I'll guide you through it without giving the answer.",
+    "startTeaching": "Start guided learning",
+    "yourAnswer": "Type your answer...",
+    "submit": "Submit my answer",
+    "encouragement": {
+      "correct": "Excellent! That's right.",
+      "close": "Almost there! Think about...",
+      "tryAgain": "Not quite. Let me help..."
+    }
+  },
+  "practice": {
+    "title": "Practice",
+    "similarProblem": "Try a Similar Problem",
+    "difficulty": {
+      "easier": "Easier",
+      "same": "Same difficulty",
+      "harder": "Harder"
+    },
+    "generateSet": "Generate 5 practice questions",
+    "daily": {
+      "title": "Today's Practice",
+      "subtitle": "Based on your recent activity and areas to improve.",
+      "start": "Start Today's Practice",
+      "complete": "Practice Complete!"
+    },
+    "mistakes": {
+      "title": "My Mistakes",
+      "subtitle": "Review and retry your previous mistakes.",
+      "retry": "Try Again",
+      "noMistakes": "No mistakes yet! Keep solving problems."
+    },
+    "topics": {
+      "title": "Practice by Topic",
+      "arithmetic": "Arithmetic",
+      "algebra": "Algebra",
+      "geometry": "Geometry",
+      "trigonometry": "Trigonometry",
+      "calculus": "Calculus",
+      "probability": "Probability",
+      "statistics": "Statistics",
+      "linearAlgebra": "Linear Algebra",
+      "coordinateGeometry": "Coordinate Geometry",
+      "numberTheory": "Number Theory"
+    },
+    "ncert": {
+      "title": "NCERT Practice",
+      "subtitle": "Practice NCERT textbook questions."
+    },
+    "curriculum": {
+      "general": "General Mathematics",
+      "ncert": "NCERT (India)",
+      "gcse": "GCSE (UK)",
+      "ap": "AP Mathematics (US)",
+      "ib": "IB Mathematics",
+      "college": "College Mathematics"
+    }
+  },
+  "history": {
+    "title": "History",
+    "subtitle": "Your previous math problems.",
+    "reopen": "Continue",
+    "noHistory": "No problems solved yet. Start solving!",
+    "search": "Search your history..."
+  },
+  "progress": {
+    "title": "Learning Progress",
+    "streak": "Current Streak",
+    "totalSolved": "Total Solved",
+    "accuracy": "Accuracy",
+    "score": "Total Score",
+    "days": "Days",
+    "activity": "Activity (Last 14 Days)",
+    "weakTopics": "Areas to Improve",
+    "noWeakTopics": "No weak areas yet! Keep solving problems.",
+    "recommended": "Recommended Practice",
+    "topicStrength": {
+      "strong": "Strong",
+      "good": "Good",
+      "needsPractice": "Needs Practice"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "educationLevel": {
+      "title": "Education Level",
+      "middleSchool": "Middle School",
+      "highSchool": "High School",
+      "college": "College",
+      "university": "University",
+      "other": "Other"
+    },
+    "curriculum": {
+      "title": "Curriculum (optional)"
+    },
+    "language": {
+      "title": "Language",
+      "en": "English"
+    },
+    "theme": {
+      "title": "Theme",
+      "dark": "Dark",
+      "light": "Light",
+      "auto": "System"
+    },
+    "apiKey": {
+      "title": "Custom API Key",
+      "description": "Use your own Gemini API key for higher rate limits.",
+      "placeholder": "Paste your Gemini API key..."
+    }
+  },
+  "share": {
+    "share": "Share Solution",
+    "copied": "Link copied!",
+    "sharedBy": "Shared via AI Math Tutor"
+  },
+  "auth": {
+    "welcome": "Welcome to",
+    "subtitle": "Your AI-powered math tutor.",
+    "continueWithGoogle": "Continue with Google",
+    "continueAsGuest": "Continue as Guest",
+    "guestNote": "Sign in later to save your progress.",
+    "terms": "By continuing, you agree to our Terms of Service and Privacy Policy."
+  },
+  "common": {
+    "loading": "Loading...",
+    "retry": "Try again",
+    "cancel": "Cancel",
+    "save": "Save",
+    "close": "Close",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "helpful": "Helpful",
+    "notHelpful": "Not Helpful"
+  }
+}

@@ -1,5 +1,5 @@
 """
-FastAPI Application — Advanced Mathematics Assistant Backend.
+FastAPI Application — AI Math Tutor Backend.
 
 This is the main entry point for the backend API server.
 Run with: uvicorn backend.src.main:app --host 0.0.0.0 --port 8080
@@ -24,14 +24,14 @@ logging.basicConfig(
     level=getattr(logging, settings.log_level.upper(), logging.INFO),
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
-logger = logging.getLogger("math_assistant.app")
+logger = logging.getLogger("math_tutor.app")
 
 
 # ── Application Lifespan ──────────────────────────────────────────────
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown events for the FastAPI application."""
-    logger.info("🚀 Starting Advanced Mathematics Assistant API...")
+    logger.info("🚀 Starting AI Math Tutor API...")
     logger.info(f"   Environment: {settings.environment}")
     logger.info(f"   LLM Model: {settings.llm_model}")
     logger.info(f"   Vector DB: {settings.vector_db_type}")
@@ -46,17 +46,18 @@ async def lifespan(app: FastAPI):
 
     yield  # Application is running
 
-    logger.info("🛑 Shutting down Advanced Mathematics Assistant API.")
+    logger.info("🛑 Shutting down AI Math Tutor API.")
 
 
 # ── FastAPI App ────────────────────────────────────────────────────────
 app = FastAPI(
-    title="Advanced Mathematics Assistant API",
+    title="AI Math Tutor API",
     description=(
-        "AI-powered math tutoring API for Indian school students (Class 6-12 + JEE). "
-        "Uses RAG retrieval, SymPy symbolic computation, and LLM-based step-by-step solutions."
+        "AI-powered math tutoring API for students worldwide. "
+        "Uses multi-agent orchestration, verified mathematical computation, "
+        "and step-by-step explanations to help students learn mathematics."
     ),
-    version="1.0.0",
+    version="2.0.0",
     lifespan=lifespan,
 )
 
@@ -88,6 +89,13 @@ app.include_router(symbolic.router)
 from backend.src.api.v1 import quiz
 app.include_router(quiz.router, prefix="/api/v1/quiz", tags=["Quiz"])
 
+# ── New Differentiation Feature Routes ─────────────────────────────────
+from backend.src.api.v1 import check_work, hints, teach, practice
+app.include_router(check_work.router)
+app.include_router(hints.router)
+app.include_router(teach.router)
+app.include_router(practice.router)
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint — returns API status and knowledge base info.
@@ -109,7 +117,7 @@ async def health_check():
     return {
         "status": "ok",
         "environment": settings.environment,
-        "version": "1.0.0",
+        "version": "2.0.0",
         "kb_docs": kb_docs,
         "llm_model": settings.llm_model,
         "vector_db": settings.vector_db_type,
@@ -120,7 +128,7 @@ async def health_check():
 async def root():
     """Root endpoint — redirect info."""
     return {
-        "message": "Advanced Mathematics Assistant API",
+        "message": "AI Math Tutor API",
         "docs": "/docs",
         "health": "/health",
     }

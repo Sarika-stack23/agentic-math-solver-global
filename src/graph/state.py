@@ -2,7 +2,7 @@
 LangGraph State Definition
 """
 
-from typing import TypedDict, Annotated, List
+from typing import TypedDict, Annotated, List, Optional
 
 class MathAgentState(TypedDict):
     """Represents the state of the math orchestration pipeline."""
@@ -12,9 +12,14 @@ class MathAgentState(TypedDict):
     uid: str
     session_id: str
     
+    # Mode: solve | hint | teach | check_work
+    mode: str
+    
     # Planner output
     question_type: str
     class_level: int
+    education_level: str
+    topic: str
     
     # Retrievals (Running in parallel)
     rag_context: str
@@ -27,6 +32,7 @@ class MathAgentState(TypedDict):
     # Verifier Feedback
     is_correct: bool
     verification_feedback: str
+    verification_status: str  # "verified" | "unverified" | "failed"
     retries: int
     
     # Formatter Output

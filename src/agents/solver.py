@@ -91,7 +91,7 @@ class SolverAgent(Agent):
     def retrieve_context(self, query: str) -> str:
         """Retrieve RAG context for the query."""
         try:
-            retriever = self.vector_store.as_retriever(search_kwargs={"k": 3})
+            retriever = self.vector_store.as_retriever(k=3)
             docs = retriever.invoke(query)
             if not docs:
                 return "No relevant context found."
