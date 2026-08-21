@@ -1,0 +1,51 @@
+# ── Secrets & Environment ──────────────────────────────────
+.env
+*.env
+.env.local
+.env.example.save
+
+# ── Python ─────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# ── Virtual Environment ────────────────────────────────────
+venv/
+.venv/
+env/
+
+# ── Vector Databases (auto-rebuilt on first run) ───────────
+chroma_db/
+faiss_index/
+
+# ── Streamlit ──────────────────────────────────────────────
+.streamlit/
+
+# ── macOS ──────────────────────────────────────────────────
+.DS_Store
+
+# ── Logs & Cache ───────────────────────────────────────────
+*.log
+.cache/
+models/
+
+# ── Temp files created by app ──────────────────────────────
+temp_*.pdf
+temp_*.png
+tmp_*.pdf
+
+# ── Testing & Coverage ────────────────────────────────────
+.pytest_cache/
+htmlcov/
+.coverage
+*.egg-info/
+
+# ── Build artifacts ────────────────────────────────────────
+dist/
+build/
+
+# ── Frontend ───────────────────────────────────────────────
+node_modules/
+.firebase/
+frontend/dist/test_math.jpg

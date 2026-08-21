@@ -1,0 +1,92 @@
+name: Deploy to Cloud Run & Firebase
+
+# ──────────────────────────────────────────────────────────────────────
+# This workflow deploys the application to GCP.
+# It requires the following GitHub Secrets to be configured:
+#   - GCP_PROJECT_ID
+#   - WIF_PROVIDER  (Workload Identity Federation provider)
+#   - WIF_SERVICE_ACCOUNT
+#   - FIREBASE_SERVICE_ACCOUNT
+#
+# It only runs on manual dispatch so it won't fail on every push
+# when secrets are not yet configured.
+# ──────────────────────────────────────────────────────────────────────
+
+on:
+  workflow_dispatch:   # Manual trigger only
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: us-central1
+  SERVICE_NAME: math-ai-backend
+
+jobs:
+  deploy-backend:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Google Auth
+      id: auth
+      uses: google-github-actions/auth@v2
+      with:
+        workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+        service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+        
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+      
+    - name: Configure Docker Auth
+      run: |-
+        gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+
+    - name: Build and Push Docker image
+      run: |
+        IMAGE_NAME="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/cloud-run-source-deploy/${{ env.SERVICE_NAME }}:${{ github.sha }}"
+        docker build -t $IMAGE_NAME -f backend/Dockerfile .
+        docker push $IMAGE_NAME
+        
+    - name: Deploy to Cloud Run
+      id: deploy
+      uses: google-github-actions/deploy-cloudrun@v2
+      with:
+        service: ${{ env.SERVICE_NAME }}
+        region: ${{ env.REGION }}
+        image: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/cloud-run-source-deploy/${{ env.SERVICE_NAME }}:${{ github.sha }}
+        env_vars: |
+          ENVIRONMENT=production
+          USE_GEMINI=true
+          USE_FIREBASE=true
+        secrets: |
+          GEMINI_API_KEY=GEMINI_API_KEY:latest
+          FIREBASE_SERVICE_ACCOUNT=FIREBASE_SERVICE_ACCOUNT:latest
+
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+
+    - name: Install and Build Frontend
+      working-directory: ./frontend
+      run: |
+        npm install --legacy-peer-deps
+        npm run build
+
+    - name: Deploy to Firebase Hosting
+      uses: FirebaseExtended/action-hosting-deploy@v0
+      with:
+        repoToken: '${{ secrets.GITHUB_TOKEN }}'
+        firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
+        channelId: live
+        projectId: '${{ secrets.GCP_PROJECT_ID }}'
