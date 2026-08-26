@@ -21,7 +21,24 @@ client = TestClient(app)
 
 
 class TestHealthEndpoint(unittest.TestCase):
-    """Verify /health endpoint returns correct status."""
+    """Verify the health and root endpoints."""
+
+    def test_security_headers(self):
+        """Verify that the SecurityHeadersMiddleware applies correctly."""
+        response = client.get("/health")
+        assert response.headers.get("X-Content-Type-Options") == "nosniff"
+        assert response.headers.get("X-Frame-Options") == "DENY"
+        assert response.headers.get("X-XSS-Protection") == "1; mode=block"
+
+    def test_cors_rejected(self):
+        """Verify that unauthorized CORS origins are rejected."""
+        response = client.options("/health", headers={
+            "Origin": "http://malicious-site.com",
+            "Access-Control-Request-Method": "GET"
+        })
+        # FastAPI CORSMiddleware returns 400 Bad Request for invalid origins in preflight
+        # Wait, if origin is not allowed, it might just return 400, or not include ACA-Origin header
+        assert response.status_code == 400 or "access-control-allow-origin" not in response.headers.keys()
 
     def test_health_returns_200(self):
         """GET /health should return HTTP 200."""

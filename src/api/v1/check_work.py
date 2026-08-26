@@ -123,21 +123,21 @@ async def check_work_image(
     problem: str = Form(...),
     file: UploadFile = File(...),
     uid: str = Depends(verify_firebase_token),
-    x_gemini_api_key: Optional[str] = Header(None),
+
 ):
     """Analyze a student's handwritten solution from an image."""
     try:
         image_bytes = await file.read()
         
         # First, extract the student's work from the image
-        vision = GeminiVisionService(custom_api_key=x_gemini_api_key)
+        vision = GeminiVisionService()
         extracted = vision.extract_math_from_image(image_bytes, mime_type=file.content_type)
         
         if extracted.startswith("REJECTED:"):
             raise HTTPException(status_code=400, detail="The uploaded image doesn't appear to contain mathematical work.")
         
         # Then analyze it
-        gemini = GeminiService(custom_api_key=x_gemini_api_key)
+        gemini = GeminiService()
         prompt = CHECK_WORK_PROMPT.format(
             problem=problem,
             student_solution=f"(Extracted from handwritten image):\n{extracted}"

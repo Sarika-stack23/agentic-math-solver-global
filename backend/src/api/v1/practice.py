@@ -8,10 +8,9 @@ import logging
 from typing import Optional, List
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi import APIRouter, HTTPException, Depends, Request, Header
 from pydantic import BaseModel, Field
 
-from backend.src.services.gemini_service import GeminiService
 from backend.src.services.firebase_service import get_firestore_client
 from backend.src.config import settings
 from backend.src.api.middleware.auth import verify_firebase_token
@@ -111,7 +110,6 @@ async def generate_practice(request: Request, payload: PracticeGenerateRequest, 
         if payload.reference_problem:
             reference = f"Generate problems SIMILAR to this one (same concept, different numbers): {payload.reference_problem}"
         
-        gemini = GeminiService()
         prompt = PRACTICE_PROMPT.format(
             count=payload.count,
             topic=payload.topic,
@@ -120,7 +118,9 @@ async def generate_practice(request: Request, payload: PracticeGenerateRequest, 
             reference=reference,
         )
         
-        raw = gemini.query(prompt, context="")
+        from backend.src.services.llm_service import MathAIEngine
+        engine = MathAIEngine(session_id="practice")
+        raw = engine.generate(user_input=prompt, system_prompt="")
         
         import json
         import re
@@ -172,14 +172,15 @@ async def daily_practice(request: Request, uid: str = Depends(verify_firebase_to
             except Exception:
                 pass
         
-        gemini = GeminiService()
         prompt = DAILY_PRACTICE_PROMPT.format(
             weak_topics=", ".join(weak_topics),
             recent_topics=", ".join(recent_topics),
             education_level=education_level,
         )
         
-        raw = gemini.query(prompt, context="")
+        from backend.src.services.llm_service import MathAIEngine
+        engine = MathAIEngine(session_id="daily_practice")
+        raw = engine.generate(user_input=prompt, system_prompt="")
         
         import json
         import re

@@ -7,10 +7,9 @@ Progressive hint system that gradually reveals solution approach.
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi import APIRouter, HTTPException, Depends, Request, Header
 from pydantic import BaseModel, Field
 
-from backend.src.services.gemini_service import GeminiService
 from backend.src.config import settings
 from backend.src.api.middleware.auth import verify_firebase_token
 from backend.src.api.limiter import limiter
@@ -37,7 +36,7 @@ class HintResponse(BaseModel):
 
 
 HINT_PROMPTS = {
-    1: """You are a math tutor giving a VERY GENTLE HINT for this problem. 
+    1: """You are a math tutor giving a VERY GENTLE HINT for this problem.
 Do NOT reveal any formulas or methods. Just nudge the student in the right direction.
 Say something like: "Think about what type of problem this is" or "What do you notice about the numbers?"
 Keep it to 1-2 sentences max.
@@ -80,11 +79,13 @@ async def get_hint(request: Request, payload: HintRequest, uid: str = Depends(ve
     try:
         level = min(payload.hint_level, 4)
         is_full = level >= 4
-        
-        gemini = GeminiService()
+
         prompt = HINT_PROMPTS[level].format(problem=payload.problem)
-        hint_text = gemini.query(prompt, context="")
-        
+
+        from backend.src.services.llm_service import MathAIEngine
+        engine = MathAIEngine(session_id="hints")
+        hint_text = engine.generate(user_input=prompt, system_prompt="")
+
         return HintResponse(
             hint=hint_text,
             hint_level=level,
@@ -92,7 +93,7 @@ async def get_hint(request: Request, payload: HintRequest, uid: str = Depends(ve
             has_more=level < 4,
             is_full_solution=is_full,
         )
-        
+
     except Exception as e:
         logger.error(f"Hint error: {e}")
         raise HTTPException(status_code=500, detail="Something went wrong while generating a hint. Please try again.")

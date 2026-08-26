@@ -7,18 +7,21 @@ import logging
 import tempfile
 import os
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Request
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 from backend.src.api.middleware.auth import verify_firebase_token
 from backend.src.services.qdrant_service import QdrantService
 
+from backend.src.api.limiter import limiter
+
 logger = logging.getLogger("math_assistant.api.documents")
 router = APIRouter(prefix="/api/v1/documents", tags=["documents"])
 
 @router.post("/upload")
-async def upload_document(file: UploadFile = File(...), uid: str = Depends(verify_firebase_token)):
+@limiter.limit("10/minute")
+async def upload_document(request: Request, file: UploadFile = File(...), uid: str = Depends(verify_firebase_token)):
     """Upload a PDF file and add it to the knowledge base."""
     if not file.filename.lower().endswith('.pdf'):
         raise HTTPException(status_code=400, detail="Only PDF files are supported.")
@@ -53,4 +56,4 @@ async def upload_document(file: UploadFile = File(...), uid: str = Depends(verif
         }
     except Exception as e:
         logger.error(f"Error uploading document: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="An internal server error occurred. Please try again.")

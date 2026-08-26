@@ -7,13 +7,23 @@ Analyzes a student's solution attempt and identifies errors step-by-step.
 import logging
 from typing import Optional, List
 
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends, Request, Header
+from fastapi import (
+    APIRouter,
+    HTTPException,
+    UploadFile,
+    File,
+    Form,
+    Depends,
+    Request,
+    Header,
+)
 from pydantic import BaseModel, Field
 
-from backend.src.services.gemini_service import GeminiService, GeminiVisionService
+from backend.src.services.gemini_service import GeminiVisionService
 from backend.src.config import settings
 from backend.src.api.middleware.auth import verify_firebase_token
 from backend.src.api.limiter import limiter
+from backend.src.api.concurrency import validate_upload
 
 logger = logging.getLogger("math_tutor.api.check_work")
 
@@ -22,6 +32,7 @@ router = APIRouter(prefix="/api/v1", tags=["check-work"])
 
 class StepAnalysis(BaseModel):
     """Analysis of a single step in the student's work."""
+
     step_number: int
     student_step: str
     is_correct: bool
@@ -30,12 +41,21 @@ class StepAnalysis(BaseModel):
 
 class CheckWorkRequest(BaseModel):
     """Request body for text-based check-my-work."""
-    problem: str = Field(..., min_length=1, max_length=3000, description="The original math problem")
-    student_solution: str = Field(..., min_length=1, max_length=5000, description="The student's attempted solution")
+
+    problem: str = Field(
+        ..., min_length=1, max_length=3000, description="The original math problem"
+    )
+    student_solution: str = Field(
+        ...,
+        min_length=1,
+        max_length=5000,
+        description="The student's attempted solution",
+    )
 
 
 class CheckWorkResponse(BaseModel):
     """Response from check-my-work analysis."""
+
     is_fully_correct: bool
     steps: List[StepAnalysis]
     first_error_step: Optional[int] = None
@@ -75,22 +95,27 @@ Be encouraging but honest. Focus on the FIRST error — don't overwhelm with all
 
 @router.post("/check-work", response_model=CheckWorkResponse)
 @limiter.limit("15/minute")
-async def check_work(request: Request, payload: CheckWorkRequest, uid: str = Depends(verify_firebase_token)):
+async def check_work(
+    request: Request,
+    payload: CheckWorkRequest,
+    uid: str = Depends(verify_firebase_token),
+):
     """Analyze a student's solution and identify errors."""
     try:
-        gemini = GeminiService()
         prompt = CHECK_WORK_PROMPT.format(
-            problem=payload.problem,
-            student_solution=payload.student_solution
+            problem=payload.problem, student_solution=payload.student_solution
         )
-        
-        raw_response = gemini.query(prompt, context="")
-        
+
+        from backend.src.services.llm_service import MathAIEngine
+
+        engine = MathAIEngine(session_id="check_work")
+        raw_response = engine.generate(user_input=prompt, system_prompt="")
+
         import json
         import re
-        
+
         # Extract JSON from response
-        match = re.search(r'\{.*\}', raw_response, re.DOTALL)
+        match = re.search(r"\{.*\}", raw_response, re.DOTALL)
         if match:
             result = json.loads(match.group(0))
             return CheckWorkResponse(
@@ -102,7 +127,7 @@ async def check_work(request: Request, payload: CheckWorkRequest, uid: str = Dep
                 key_concept=result.get("key_concept", ""),
                 correct_answer=result.get("correct_answer", ""),
             )
-        
+
         # Fallback if JSON parsing fails
         return CheckWorkResponse(
             is_fully_correct=False,
@@ -110,10 +135,13 @@ async def check_work(request: Request, payload: CheckWorkRequest, uid: str = Dep
             first_error_explanation="I couldn't fully analyze your work. Please try again.",
             correct_answer="",
         )
-        
+
     except Exception as e:
         logger.error(f"Check work error: {e}")
-        raise HTTPException(status_code=500, detail="Something went wrong while checking your work. Please try again.")
+        raise HTTPException(
+            status_code=500,
+            detail="Something went wrong while checking your work. Please try again.",
+        )
 
 
 @router.post("/check-work/image", response_model=CheckWorkResponse)
@@ -123,32 +151,44 @@ async def check_work_image(
     problem: str = Form(...),
     file: UploadFile = File(...),
     uid: str = Depends(verify_firebase_token),
-    x_gemini_api_key: Optional[str] = Header(None),
 ):
     """Analyze a student's handwritten solution from an image."""
     try:
-        image_bytes = await file.read()
-        
+        image_bytes = await validate_upload(file, allow_pdf=False)
+
         # First, extract the student's work from the image
-        vision = GeminiVisionService(custom_api_key=x_gemini_api_key)
-        extracted = vision.extract_math_from_image(image_bytes, mime_type=file.content_type)
-        
+        if settings.use_gemini:
+            vision = GeminiVisionService()
+        else:
+            from backend.src.services.gemini_service import GroqVisionService
+
+            vision = GroqVisionService()
+
+        extracted = vision.extract_math_from_image(
+            image_bytes, mime_type=file.content_type
+        )
+
         if extracted.startswith("REJECTED:"):
-            raise HTTPException(status_code=400, detail="The uploaded image doesn't appear to contain mathematical work.")
-        
+            raise HTTPException(
+                status_code=400,
+                detail="The uploaded image doesn't appear to contain mathematical work.",
+            )
+
         # Then analyze it
-        gemini = GeminiService(custom_api_key=x_gemini_api_key)
         prompt = CHECK_WORK_PROMPT.format(
             problem=problem,
-            student_solution=f"(Extracted from handwritten image):\n{extracted}"
+            student_solution=f"(Extracted from handwritten image):\n{extracted}",
         )
-        
-        raw_response = gemini.query(prompt, context="")
-        
+
+        from backend.src.services.llm_service import MathAIEngine
+
+        engine = MathAIEngine(session_id="check_work_image")
+        raw_response = engine.generate(user_input=prompt, system_prompt="")
+
         import json
         import re
-        
-        match = re.search(r'\{.*\}', raw_response, re.DOTALL)
+
+        match = re.search(r"\{.*\}", raw_response, re.DOTALL)
         if match:
             result = json.loads(match.group(0))
             return CheckWorkResponse(
@@ -160,16 +200,19 @@ async def check_work_image(
                 key_concept=result.get("key_concept", ""),
                 correct_answer=result.get("correct_answer", ""),
             )
-        
+
         return CheckWorkResponse(
             is_fully_correct=False,
             steps=[],
             first_error_explanation="I couldn't fully analyze your handwritten work. Try uploading a clearer image.",
             correct_answer="",
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Check work image error: {e}")
-        raise HTTPException(status_code=500, detail="Something went wrong while checking your work. Please try again.")
+        raise HTTPException(
+            status_code=500,
+            detail="Something went wrong while checking your work. Please try again.",
+        )

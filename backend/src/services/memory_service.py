@@ -24,10 +24,11 @@ logger = logging.getLogger("math_assistant.memory")
 class FirestoreChatMemory:
     """Per-session chat memory with Firestore persistence and in-memory fallback."""
 
+    _in_memory_store: Dict[str, List[Dict]] = {}
+
     def __init__(self, uid: str = "anonymous", session_id: str = "default"):
         self.uid = uid
         self.session_id = session_id
-        self._memory: List[Dict] = []
         self.db = get_firestore_client()
 
     def _get_collection_ref(self):
@@ -51,10 +52,16 @@ class FirestoreChatMemory:
                 return
             except Exception as e:
                 logger.error(f"Failed to add message to Firestore: {e}")
+                from fastapi import HTTPException
+                raise HTTPException(status_code=503, detail="Persistence is temporarily unavailable.")
 
-        # Fallback to in-memory
-        msg["session_id"] = self.session_id
-        self._memory.append(msg)
+        if not settings.use_firebase:
+            # Fallback to in-memory only if firebase is explicitly disabled
+            msg["session_id"] = self.session_id
+            key = f"{self.uid}_{self.session_id}"
+            if key not in self._in_memory_store:
+                self._in_memory_store[key] = []
+            self._in_memory_store[key].append(msg)
 
     def get_history(self, limit: int = 20) -> List[Dict]:
         """Retrieve recent chat history for this session."""
@@ -72,9 +79,15 @@ class FirestoreChatMemory:
                 return msgs
             except Exception as e:
                 logger.error(f"Failed to get history from Firestore: {e}")
+                from fastapi import HTTPException
+                raise HTTPException(status_code=503, detail="Persistence is temporarily unavailable.")
 
-        # Fallback to in-memory
-        return self._memory[-limit:]
+        if not settings.use_firebase:
+            # Fallback to in-memory
+            key = f"{self.uid}_{self.session_id}"
+            return self._in_memory_store.get(key, [])[-limit:]
+        
+        return []
 
     def get_langchain_messages(self, limit: int = 10):
         """Convert chat history to LangChain message objects."""
@@ -102,8 +115,13 @@ class FirestoreChatMemory:
                     batch.commit()
             except Exception as e:
                 logger.error(f"Failed to clear history in Firestore: {e}")
+                from fastapi import HTTPException
+                raise HTTPException(status_code=503, detail="Persistence is temporarily unavailable.")
 
-        self._memory.clear()
+        if not settings.use_firebase:
+            key = f"{self.uid}_{self.session_id}"
+            if key in self._in_memory_store:
+                self._in_memory_store[key].clear()
 
 # Maintain backward compatibility name for the MathAIEngine import during transition
 MongoDBChatMemory = FirestoreChatMemory

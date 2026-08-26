@@ -103,7 +103,7 @@ async def chat(request: Request, payload: ChatRequest, uid: str = Depends(verify
 
 @router.post("/chat/stream")
 @limiter.limit("20/minute")
-async def chat_stream(request: Request, payload: ChatRequest, uid: str = Depends(verify_firebase_token), x_gemini_api_key: Optional[str] = Header(None)):
+async def chat_stream(request: Request, payload: ChatRequest, uid: str = Depends(verify_firebase_token)):
     """
     Stream a response from the AI Engine to the frontend using SSE.
     """
@@ -120,13 +120,13 @@ async def chat_stream(request: Request, payload: ChatRequest, uid: str = Depends
         chat_history = engine.memory.get_langchain_messages(limit=4)
         engine.memory.add_message("human", payload.query)
 
-        gemini = GeminiService(custom_api_key=x_gemini_api_key)
+        gemini = GeminiService()
 
         import json
         async def generate():
             full_response = ""
             try:
-                if not settings.use_gemini and not x_gemini_api_key:
+                if not settings.use_gemini:
                     raise Exception("Gemini is disabled via USE_GEMINI=false. Bypassing to fallback.")
                     
                 async for chunk in gemini.stream(payload.query, context=context, chat_history=chat_history):
@@ -182,13 +182,13 @@ async def chat_stream(request: Request, payload: ChatRequest, uid: str = Depends
 
 @router.post("/vision/extract", response_model=VisionResponse)
 @limiter.limit("20/minute")
-async def extract_math_from_image(request: Request, file: UploadFile = File(...), solve: bool = Form(False), uid: str = Depends(verify_firebase_token), x_gemini_api_key: Optional[str] = Header(None)):
+async def extract_math_from_image(request: Request, file: UploadFile = File(...), solve: bool = Form(False), uid: str = Depends(verify_firebase_token)):
     """Extract math from an uploaded image using Vision models."""
     try:
         image_bytes = await file.read()
         
-        if settings.use_gemini or x_gemini_api_key:
-            vision_service = GeminiVisionService(custom_api_key=x_gemini_api_key)
+        if settings.use_gemini:
+            vision_service = GeminiVisionService()
         else:
             from backend.src.services.gemini_service import GroqVisionService
             vision_service = GroqVisionService()

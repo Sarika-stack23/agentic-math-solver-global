@@ -27,11 +27,9 @@ class Settings(BaseSettings):
 
     # ── LLM Configuration ──────────────────────────────────────────────
     groq_api_key: str = ""
-    llm_model: str = "llama-3.3-70b-versatile"
+    llm_model: str = "openai/gpt-oss-120b"
     groq_model_fallbacks: List[str] = [
-        "llama-3.3-70b-versatile",
-        "llama3-8b-8192",
-        "mixtral-8x7b-32768",
+        "openai/gpt-oss-20b",
     ]
 
     # ── Gemini Configuration ───────────────────────────────────────────

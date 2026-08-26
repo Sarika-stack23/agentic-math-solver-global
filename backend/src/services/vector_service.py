@@ -7,6 +7,7 @@ knowledge base build pipeline.
 """
 
 import logging
+import threading
 from pathlib import Path
 from typing import Optional, List
 
@@ -15,18 +16,26 @@ from backend.src.config import settings
 logger = logging.getLogger("math_assistant.vector")
 
 _EMBEDDINGS_CACHE = {}
+_EMBEDDINGS_LOCK = threading.Lock()
 
 
 def get_embeddings():
-    """Get or create the singleton embedding model instance."""
-    if "model" not in _EMBEDDINGS_CACHE:
-        from langchain_huggingface import HuggingFaceEmbeddings
-        logger.info(f"Loading embedding model: {settings.embedding_model}")
-        _EMBEDDINGS_CACHE["model"] = HuggingFaceEmbeddings(
-            model_name=settings.embedding_model,
-            model_kwargs={"device": "cpu"},
-            encode_kwargs={"normalize_embeddings": True},
-        )
+    """Get or create the singleton embedding model instance.
+
+    Thread-safe: uses double-checked locking to prevent duplicate model loading
+    when multiple requests arrive simultaneously during startup.
+    """
+    if "model" in _EMBEDDINGS_CACHE:
+        return _EMBEDDINGS_CACHE["model"]
+    with _EMBEDDINGS_LOCK:
+        if "model" not in _EMBEDDINGS_CACHE:
+            from langchain_huggingface import HuggingFaceEmbeddings
+            logger.info(f"Loading embedding model: {settings.embedding_model}")
+            _EMBEDDINGS_CACHE["model"] = HuggingFaceEmbeddings(
+                model_name=settings.embedding_model,
+                model_kwargs={"device": "cpu"},
+                encode_kwargs={"normalize_embeddings": True},
+            )
     return _EMBEDDINGS_CACHE["model"]
 
 
@@ -136,29 +145,39 @@ class MathVectorStore:
 
 
 _PIPELINE_CACHE = {}
+_PIPELINE_LOCK = threading.Lock()
 
 def build_pipeline(force_rebuild=False):
-    """Build or load the knowledge base pipeline."""
+    """Build or load the knowledge base pipeline.
+
+    Thread-safe: uses a lock to prevent concurrent builds of the vector store
+    when multiple users send their first request simultaneously.
+    """
     from backend.src.config import settings
-    
+
     if "store" in _PIPELINE_CACHE and not force_rebuild:
         return _PIPELINE_CACHE["store"]
-        
-    if getattr(settings, "vector_db", "qdrant") == "qdrant":
-        from backend.src.services.qdrant_service import QdrantService
-        store = QdrantService()
-        if store.get_document_count() == 0 or force_rebuild:
-            from backend.src.math.knowledge_indexer import KnowledgeIndexer
-            indexer = KnowledgeIndexer()
-            indexer.index_all()
-        _PIPELINE_CACHE["store"] = store
-        return store
-    else:
-        # Fallback to Chroma (legacy)
-        store = MathVectorStore()
-        if store.is_ready() and not force_rebuild:
-            logger.info(f"Knowledge base already built ({store.get_document_count()} docs).")
+
+    with _PIPELINE_LOCK:
+        # Double-check inside lock
+        if "store" in _PIPELINE_CACHE and not force_rebuild:
+            return _PIPELINE_CACHE["store"]
+
+        if getattr(settings, "vector_db", "qdrant") == "qdrant":
+            from backend.src.services.qdrant_service import QdrantService
+            store = QdrantService()
+            if store.get_document_count() == 0 or force_rebuild:
+                from backend.src.math.knowledge_indexer import KnowledgeIndexer
+                indexer = KnowledgeIndexer(qdrant_service=store)
+                indexer.index_all()
+            _PIPELINE_CACHE["store"] = store
+            return store
         else:
-            logger.warning("Chroma build from scratch is deprecated. Please use Qdrant.")
-        _PIPELINE_CACHE["store"] = store
-        return store
+            # Fallback to Chroma (legacy)
+            store = MathVectorStore()
+            if store.is_ready() and not force_rebuild:
+                logger.info(f"Knowledge base already built ({store.get_document_count()} docs).")
+            else:
+                logger.warning("Chroma build from scratch is deprecated. Please use Qdrant.")
+            _PIPELINE_CACHE["store"] = store
+            return store

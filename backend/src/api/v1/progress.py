@@ -14,6 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from backend.src.api.middleware.auth import verify_firebase_token
 from backend.src.services.firebase_service import get_firestore_client
+from backend.src.config import settings
 
 logger = logging.getLogger("math_assistant.api.progress")
 
@@ -26,6 +27,8 @@ class ProgressResponse(BaseModel):
     activity_map: Dict[str, int] = {}
     weak_topics: List[str] = []
     accuracy: int = 100
+
+_VALID_PROGRESS_KEYS = set(ProgressResponse.model_fields.keys() if hasattr(ProgressResponse, "model_fields") else ProgressResponse.__fields__.keys())
 
 _MEMORY_STORE: Dict[str, dict] = {}
 
@@ -48,9 +51,10 @@ async def get_progress(uid: str = Depends(verify_firebase_token)):
     """Get the user's current progress and streak."""
     db = get_firestore_client()
     if not db:
-        # Fallback if Firebase is disabled
-        stats = get_memory_stats(uid)
-        return ProgressResponse(**{k: v for k, v in stats.items() if k in ProgressResponse.__fields__})
+        if settings.environment in ["development", "test"]:
+            stats = get_memory_stats(uid)
+            return ProgressResponse(**{k: v for k, v in stats.items() if k in _VALID_PROGRESS_KEYS})
+        raise HTTPException(status_code=503, detail="Progress persistence is temporarily unavailable.")
         
     try:
         doc_ref = db.collection("users").document(uid).collection("profile").document("stats")
@@ -70,7 +74,10 @@ async def get_progress(uid: str = Depends(verify_firebase_token)):
             return ProgressResponse(streak=0, total_solved=0, last_solved_date="")
     except Exception as e:
         logger.error(f"Error getting progress for {uid}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        if settings.environment in ["development", "test"]:
+            stats = get_memory_stats(uid)
+            return ProgressResponse(**{k: v for k, v in stats.items() if k in _VALID_PROGRESS_KEYS})
+        raise HTTPException(status_code=503, detail="Progress persistence is temporarily unavailable.")
 
 @router.post("/increment", response_model=ProgressResponse)
 async def increment_progress(uid: str = Depends(verify_firebase_token)):
@@ -78,30 +85,32 @@ async def increment_progress(uid: str = Depends(verify_firebase_token)):
     db = get_firestore_client()
     today_str = datetime.now(timezone.utc).date().isoformat()
     if not db:
-        stats = get_memory_stats(uid)
-        last_date = stats.get("last_solved_date", "")
-        streak = stats.get("streak", 0)
-        total = stats.get("total_solved", 0) + 1
-        activity_map = stats.get("activity_map", {})
-        activity_map[today_str] = activity_map.get(today_str, 0) + 1
-        
-        if last_date != today_str:
-            try:
-                if last_date:
-                    delta = (datetime.fromisoformat(today_str).date() - datetime.fromisoformat(last_date).date()).days
-                    streak = (streak + 1) if delta == 1 else 1
-                else:
+        if settings.environment in ["development", "test"]:
+            stats = get_memory_stats(uid)
+            last_date = stats.get("last_solved_date", "")
+            streak = stats.get("streak", 0)
+            total = stats.get("total_solved", 0) + 1
+            activity_map = stats.get("activity_map", {})
+            activity_map[today_str] = activity_map.get(today_str, 0) + 1
+            
+            if last_date != today_str:
+                try:
+                    if last_date:
+                        delta = (datetime.fromisoformat(today_str).date() - datetime.fromisoformat(last_date).date()).days
+                        streak = (streak + 1) if delta == 1 else 1
+                    else:
+                        streak = 1
+                except ValueError:
                     streak = 1
-            except ValueError:
-                streak = 1
-                
-        stats.update({
-            "streak": streak,
-            "total_solved": total,
-            "last_solved_date": today_str,
-            "activity_map": activity_map
-        })
-        return ProgressResponse(**{k: v for k, v in stats.items() if k in ProgressResponse.__fields__})
+                    
+            stats.update({
+                "streak": streak,
+                "total_solved": total,
+                "last_solved_date": today_str,
+                "activity_map": activity_map
+            })
+            return ProgressResponse(**{k: v for k, v in stats.items() if k in _VALID_PROGRESS_KEYS})
+        raise HTTPException(status_code=503, detail="Progress persistence is temporarily unavailable.")
     try:
         doc_ref = db.collection("users").document(uid).collection("profile").document("stats")
         today_str = datetime.now(timezone.utc).date().isoformat()
@@ -166,7 +175,11 @@ async def increment_progress(uid: str = Depends(verify_firebase_token)):
         
     except Exception as e:
         logger.error(f"Error incrementing progress for {uid}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        if not settings.use_firebase:
+            stats = get_memory_stats(uid)
+            stats["total_solved"] = stats.get("total_solved", 0) + 1
+            return ProgressResponse(**{k: v for k, v in stats.items() if k in _VALID_PROGRESS_KEYS})
+        raise HTTPException(status_code=503, detail="Progress persistence is temporarily unavailable.")
 
 class WeaknessRequest(BaseModel):
     topic: str
@@ -176,14 +189,16 @@ async def add_weakness(req: WeaknessRequest, uid: str = Depends(verify_firebase_
     """Add a topic to the user's weak topics list."""
     db = get_firestore_client()
     if not db:
-        stats = get_memory_stats(uid)
-        topics = stats.get("weak_topics", [])
-        if req.topic not in topics:
-            topics.append(req.topic)
-            if len(topics) > 5:
-                topics = topics[-5:]
-        stats["weak_topics"] = topics
-        return ProgressResponse(**{k: v for k, v in stats.items() if k in ProgressResponse.__fields__})
+        if settings.environment in ["development", "test"]:
+            stats = get_memory_stats(uid)
+            topics = stats.get("weak_topics", [])
+            if req.topic not in topics:
+                topics.append(req.topic)
+                if len(topics) > 5:
+                    topics = topics[-5:]
+            stats["weak_topics"] = topics
+            return ProgressResponse(**{k: v for k, v in stats.items() if k in _VALID_PROGRESS_KEYS})
+        raise HTTPException(status_code=503, detail="Progress persistence is temporarily unavailable.")
         
     doc_ref = db.collection("users").document(uid).collection("profile").document("stats")
     
@@ -220,7 +235,10 @@ async def add_weakness(req: WeaknessRequest, uid: str = Depends(verify_firebase_
         )
     except Exception as e:
         logger.error(f"Error updating weakness: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        if settings.environment in ["development", "test"]:
+            stats = get_memory_stats(uid)
+            return ProgressResponse(**{k: v for k, v in stats.items() if k in _VALID_PROGRESS_KEYS})
+        raise HTTPException(status_code=503, detail="Progress persistence is temporarily unavailable.")
 
 class AccuracyRequest(BaseModel):
     correct: bool
@@ -230,16 +248,18 @@ async def update_accuracy(req: AccuracyRequest, uid: str = Depends(verify_fireba
     """Update user's accuracy based on a correct/incorrect answer."""
     db = get_firestore_client()
     if not db:
-        stats = get_memory_stats(uid)
-        correct_ans = stats.get("correct_answers", 0) + (1 if req.correct else 0)
-        total_ans = stats.get("total_answers", 0) + 1
-        acc = int((correct_ans / total_ans) * 100)
-        stats.update({
-            "correct_answers": correct_ans,
-            "total_answers": total_ans,
-            "accuracy": acc
-        })
-        return ProgressResponse(**{k: v for k, v in stats.items() if k in ProgressResponse.__fields__})
+        if settings.environment in ["development", "test"]:
+            stats = get_memory_stats(uid)
+            correct_ans = stats.get("correct_answers", 0) + (1 if req.correct else 0)
+            total_ans = stats.get("total_answers", 0) + 1
+            acc = int((correct_ans / total_ans) * 100)
+            stats.update({
+                "correct_answers": correct_ans,
+                "total_answers": total_ans,
+                "accuracy": acc
+            })
+            return ProgressResponse(**{k: v for k, v in stats.items() if k in _VALID_PROGRESS_KEYS})
+        raise HTTPException(status_code=503, detail="Progress persistence is temporarily unavailable.")
         
     doc_ref = db.collection("users").document(uid).collection("profile").document("stats")
     
@@ -282,7 +302,10 @@ async def update_accuracy(req: AccuracyRequest, uid: str = Depends(verify_fireba
         )
     except Exception as e:
         logger.error(f"Error updating accuracy: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        if settings.environment in ["development", "test"]:
+            stats = get_memory_stats(uid)
+            return ProgressResponse(**{k: v for k, v in stats.items() if k in _VALID_PROGRESS_KEYS})
+        raise HTTPException(status_code=503, detail="Progress persistence is temporarily unavailable.")
 
 def from_firestore_transaction(db):
     """Helper decorator for Firestore transactions."""

@@ -19,20 +19,9 @@ security = HTTPBearer(auto_error=False)
 
 def verify_firebase_token(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)) -> str:
     """Verify the Firebase ID token and return the user's UID.
-
-    If USE_FIREBASE=false or no token is provided, returns 'anonymous'.
     If a token is provided but invalid, raises HTTP 401.
     """
-    if not settings.use_firebase:
-        return "anonymous"
-
-    auth = get_auth()
-    if not auth:
-        # Firebase not initialized properly
-        return "anonymous"
-
     if not credentials:
-        # Require authentication when Firebase is enabled
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing or invalid authentication token",
@@ -41,9 +30,24 @@ def verify_firebase_token(credentials: Optional[HTTPAuthorizationCredentials] = 
 
     token = credentials.credentials
 
-    # For testing: accept a dummy token (never in production)
-    if token == "test-token" and settings.environment != "production":
-        return "test-user-uid"
+    # Test/Mock mode fallback
+    if token == "mock-firebase-id-token":
+        if settings.environment in ["development", "test"] and not settings.use_firebase:
+            logger.info("Using mock firebase token for test environment.")
+            return "test-uid-12345"
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Mock tokens are not allowed in this environment",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+    auth = get_auth()
+    if not auth:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Firebase Auth is not initialized on the server.",
+        )
 
     try:
         decoded_token = auth.verify_id_token(token)
@@ -52,6 +56,8 @@ def verify_firebase_token(credentials: Optional[HTTPAuthorizationCredentials] = 
             raise ValueError("Token does not contain a UID")
         return uid
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         logger.warning(f"Firebase token verification failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

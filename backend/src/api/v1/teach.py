@@ -7,10 +7,9 @@ Socratic teaching mode that guides students through problems without giving answ
 import logging
 from typing import Optional, List
 
-from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi import APIRouter, HTTPException, Depends, Request, Header
 from pydantic import BaseModel, Field
 
-from backend.src.services.gemini_service import GeminiService
 from backend.src.config import settings
 from backend.src.api.middleware.auth import verify_firebase_token
 from backend.src.api.limiter import limiter
@@ -65,7 +64,7 @@ Previous conversation:
 The student's latest response: "{student_response}"
 
 Evaluate the student's response:
-1. Is it correct or on the right track? 
+1. Is it correct or on the right track?
 2. If correct: Acknowledge briefly and ask the NEXT guiding question to continue solving.
 3. If incorrect: Gently point out the issue and rephrase the question to help them.
 4. If the problem is now fully solved: Say so and congratulate them.
@@ -86,34 +85,38 @@ Return ONLY a valid JSON object:
 async def teach_me(request: Request, payload: TeachRequest, uid: str = Depends(verify_firebase_token)):
     """Guided Socratic teaching interaction."""
     try:
-        gemini = GeminiService()
-        
+
         if not payload.student_response and not payload.conversation_history:
             # First interaction — ask the opening question
             prompt = TEACH_START_PROMPT.format(problem=payload.problem)
-            response_text = gemini.query(prompt, context="")
-            
+
+            from backend.src.services.llm_service import MathAIEngine
+            engine = MathAIEngine(session_id="teach")
+            response_text = engine.generate(user_input=prompt, system_prompt="")
+
             return TeachResponse(
                 tutor_message=response_text.strip(),
                 is_question=True,
                 student_was_correct=None,
                 is_complete=False,
             )
-        
+
         # Continuing conversation — evaluate student's response
         history = "\n".join(payload.conversation_history[-10:])  # Keep last 10 exchanges
-        
+
         prompt = TEACH_EVALUATE_PROMPT.format(
             problem=payload.problem,
             history=history,
             student_response=payload.student_response or ""
         )
-        
-        raw = gemini.query(prompt, context="")
-        
+
+        from backend.src.services.llm_service import MathAIEngine
+        engine = MathAIEngine(session_id="teach")
+        raw = engine.generate(user_input=prompt, system_prompt="")
+
         import json
         import re
-        
+
         match = re.search(r'\{.*\}', raw, re.DOTALL)
         if match:
             result = json.loads(match.group(0))
@@ -123,14 +126,14 @@ async def teach_me(request: Request, payload: TeachRequest, uid: str = Depends(v
                 student_was_correct=result.get("student_was_correct"),
                 is_complete=result.get("is_complete", False),
             )
-        
+
         # Fallback
         return TeachResponse(
             tutor_message=raw.strip(),
             is_question=True,
             is_complete=False,
         )
-        
+
     except Exception as e:
         logger.error(f"Teach error: {e}")
         raise HTTPException(status_code=500, detail="Something went wrong. Please try again.")

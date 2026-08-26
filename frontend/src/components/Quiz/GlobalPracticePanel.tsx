@@ -18,11 +18,11 @@ interface QuizState {
   showStuckMenu: boolean;
 }
 
-type PracticeMode = 'ncert' | 'topic' | 'daily';
+type PracticeMode = 'curriculum' | 'topic' | 'daily';
 
-export const NCERTQuizPanel: React.FC = () => {
+export const GlobalPracticePanel: React.FC = () => {
   const { user } = useAuth();
-  const [mode, setMode] = useState<PracticeMode>('ncert');
+  const [mode, setMode] = useState<PracticeMode>('curriculum');
   const [state, setState] = useState<QuizState>({
     quizTree: {},
     selectedClass: '',
@@ -35,6 +35,7 @@ export const NCERTQuizPanel: React.FC = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [fetchFailed, setFetchFailed] = useState(false);
 
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
@@ -64,7 +65,7 @@ export const NCERTQuizPanel: React.FC = () => {
           return { ...prev, quizTree: data, selectedClass: firstClass, selectedChapter: firstChap, selectedExercise: firstEx, selectedQuestionIndex: 0, currentQuestionRaw: qs.length > 0 ? qs[0] : '' };
         });
       })
-      .catch(console.error);
+      .catch(() => setFetchFailed(true));
   }, [apiUrl]);
 
   const generateTopicPractice = async () => {
@@ -126,16 +127,15 @@ export const NCERTQuizPanel: React.FC = () => {
 
     try {
       let questionText = '';
-      if (mode === 'ncert') {
+      if (mode === 'curriculum') {
         questionText = state.currentQuestionRaw.split(/Answer:/i)[0].trim();
       } else if (mode === 'topic' && topicProblems[topicProblemIndex]) {
         questionText = topicProblems[topicProblemIndex].problem;
       }
 
-      const customKey = localStorage.getItem('custom_gemini_api_key') || "";
       const response = await fetch(`${apiUrl}/api/v1/chat/stream`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'X-Gemini-API-Key': customKey },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ query: `Action: ${action}\nQuestion: ${questionText}`, session_id: 'quiz-' + Date.now() })
       });
 
@@ -205,7 +205,7 @@ export const NCERTQuizPanel: React.FC = () => {
     setState(prev => ({ ...prev, selectedQuestionIndex: qIdx, currentQuestionRaw: qs[qIdx] || '', feedback: '' }));
   };
 
-  const displayQuestion = mode === 'ncert'
+  const displayQuestion = mode === 'curriculum'
     ? state.currentQuestionRaw.split(/Answer:/i)[0].trim()
     : (topicProblems[topicProblemIndex]?.problem || '');
 
@@ -223,8 +223,8 @@ export const NCERTQuizPanel: React.FC = () => {
         <button className={`btn ${mode === 'topic' ? 'btn-primary' : 'btn-outline'}`} onClick={() => { setMode('topic'); setState(prev => ({ ...prev, feedback: '' })); }}>
           <Sparkles size={16} /> {t('practice.topics.title')}
         </button>
-        <button className={`btn ${mode === 'ncert' ? 'btn-primary' : 'btn-outline'}`} onClick={() => { setMode('ncert'); setState(prev => ({ ...prev, feedback: '' })); }}>
-          <BookOpen size={16} /> {t('practice.ncert.title')}
+        <button className={`btn ${mode === 'curriculum' ? 'btn-primary' : 'btn-outline'}`} onClick={() => { setMode('curriculum'); setState(prev => ({ ...prev, feedback: '' })); }}>
+          <BookOpen size={16} /> Global Curriculum
         </button>
       </div>
 
@@ -255,39 +255,56 @@ export const NCERTQuizPanel: React.FC = () => {
         </div>
       )}
 
-      {/* NCERT Selectors */}
-      {mode === 'ncert' && (
-        <div className="card" style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: 'var(--space-lg)' }}>
-          <select value={state.selectedClass} onChange={handleClassChange} className="input" style={{ flex: '1 1 140px' }} aria-label="Select class">
-            {Object.keys(state.quizTree).sort().map(c => <option key={c} value={c}>{formatKey(c)}</option>)}
-          </select>
-          <select value={state.selectedChapter} onChange={handleChapterChange} className="input" style={{ flex: '1 1 140px' }} aria-label="Select chapter">
-            {Object.keys(state.quizTree[state.selectedClass] || {}).sort((a,b) => parseInt(a.replace('ch','')) - parseInt(b.replace('ch',''))).map(ch => <option key={ch} value={ch}>{formatKey(ch)}</option>)}
-          </select>
-          <select value={state.selectedExercise} onChange={handleExerciseChange} className="input" style={{ flex: '1 1 140px' }} aria-label="Select exercise">
-            {Object.keys(state.quizTree[state.selectedClass]?.[state.selectedChapter] || {}).sort().map(ex => <option key={ex} value={ex}>{formatKey(ex)}</option>)}
-          </select>
-          <select value={state.selectedQuestionIndex} onChange={handleQuestionChange} className="input" style={{ flex: '1 1 140px' }} aria-label="Select question">
-            {(state.quizTree[state.selectedClass]?.[state.selectedChapter]?.[state.selectedExercise] || []).map((q: string, idx: number) => {
-              const qNumMatch = q.match(/Q\d+/);
-              return <option key={idx} value={idx}>{qNumMatch ? qNumMatch[0] : `Question ${idx + 1}`}</option>;
-            })}
-          </select>
-        </div>
+      {/* Curriculum Selectors */}
+      {mode === 'curriculum' && (
+        fetchFailed || Object.keys(state.quizTree).length === 0 ? (
+          <div className="card" style={{ marginBottom: 'var(--space-lg)', textAlign: 'center', padding: 'var(--space-2xl)' }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: 'var(--space-md)', opacity: 0.3 }}>📚</div>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--space-md)', fontSize: 'var(--text-base)' }}>
+              {fetchFailed ? 'Start the backend server to load the question bank.' : 'Loading Global Curriculum question bank...'}
+            </p>
+            {fetchFailed && (
+              <code style={{ background: 'var(--accent-subtle)', padding: '8px 16px', borderRadius: 'var(--radius-sm)', fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
+                uvicorn backend.src.main:app --port 8080
+              </code>
+            )}
+          </div>
+        ) : (
+          <div className="card" style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: 'var(--space-lg)' }}>
+            <select value={state.selectedClass} onChange={handleClassChange} className="input" style={{ flex: '1 1 140px' }} aria-label="Select class">
+              {Object.keys(state.quizTree).sort().map(c => <option key={c} value={c}>{formatKey(c)}</option>)}
+            </select>
+            <select value={state.selectedChapter} onChange={handleChapterChange} className="input" style={{ flex: '1 1 140px' }} aria-label="Select chapter">
+              {Object.keys(state.quizTree[state.selectedClass] || {}).sort((a,b) => parseInt(a.replace('ch','')) - parseInt(b.replace('ch',''))).map(ch => <option key={ch} value={ch}>{formatKey(ch)}</option>)}
+            </select>
+            <select value={state.selectedExercise} onChange={handleExerciseChange} className="input" style={{ flex: '1 1 140px' }} aria-label="Select exercise">
+              {Object.keys(state.quizTree[state.selectedClass]?.[state.selectedChapter] || {}).sort().map(ex => <option key={ex} value={ex}>{formatKey(ex)}</option>)}
+            </select>
+            <select value={state.selectedQuestionIndex} onChange={handleQuestionChange} className="input" style={{ flex: '1 1 140px' }} aria-label="Select question">
+              {(state.quizTree[state.selectedClass]?.[state.selectedChapter]?.[state.selectedExercise] || []).map((q: string, idx: number) => {
+                const qNumMatch = q.match(/Q\d+/);
+                return <option key={idx} value={idx}>{qNumMatch ? qNumMatch[0] : `Question ${idx + 1}`}</option>;
+              })}
+            </select>
+          </div>
+        )
       )}
 
       {/* Question Display */}
-      <div className="card" style={{ marginBottom: 'var(--space-lg)', minHeight: '160px', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-        <div style={{ fontSize: '1.2rem', lineHeight: '1.7', width: '100%' }}>
-          {displayQuestion ? (
-            <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{displayQuestion}</ReactMarkdown>
-          ) : (
-            <span style={{ color: 'hsl(var(--text-muted))' }}>
-              {mode === 'topic' ? 'Generate practice problems to get started.' : 'Loading questions...'}
-            </span>
-          )}
+      {!(mode === 'curriculum' && (fetchFailed || Object.keys(state.quizTree).length === 0)) && (
+        <div className="card" style={{ marginBottom: 'var(--space-lg)', minHeight: '160px', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+          <div style={{ fontSize: '1.2rem', lineHeight: '1.7', width: '100%' }}>
+            {displayQuestion ? (
+              <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{displayQuestion}</ReactMarkdown>
+            ) : (
+              <div style={{ color: 'var(--text-muted)' }}>
+                <div style={{ fontSize: '2rem', marginBottom: '0.5rem', opacity: 0.3 }}>{mode === 'topic' ? '✨' : '📖'}</div>
+                <p>{mode === 'topic' ? 'Select a topic and click Generate to get started.' : 'Select a question from the dropdowns above.'}</p>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Action Buttons */}
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: 'var(--space-lg)', flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -320,7 +337,7 @@ export const NCERTQuizPanel: React.FC = () => {
 
       {/* Feedback / AI Response */}
       {state.feedback && (
-        <div className="card animate-fade-in" style={{ marginBottom: 'var(--space-2xl)', border: '1px solid hsla(var(--accent-primary), 0.2)' }}>
+        <div className="card animate-fade-in" style={{ marginBottom: 'var(--space-2xl)', border: '1px solid var(--border-glow)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-md)' }}>
             <h4>AI Response</h4>
             <button title="Copy" onClick={handleCopy} className="btn btn-ghost" aria-label="Copy solution">
@@ -332,7 +349,7 @@ export const NCERTQuizPanel: React.FC = () => {
           </div>
 
           {!isLoading && (
-            <div style={{ display: 'flex', gap: '0.5rem', marginTop: 'var(--space-md)', flexWrap: 'wrap', borderTop: '1px solid hsl(var(--border))', paddingTop: 'var(--space-md)' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: 'var(--space-md)', flexWrap: 'wrap', borderTop: '1px solid var(--border)', paddingTop: 'var(--space-md)' }}>
               <button className="btn btn-secondary" onClick={() => handleAction("I understood it, thanks!")} style={{ fontSize: '0.85rem' }}>
                 <CheckCircle size={14} /> Got it!
               </button>

@@ -18,6 +18,7 @@ env/
 # ── Vector Databases (auto-rebuilt on first run) ───────────
 chroma_db/
 faiss_index/
+qdrant_data/
 
 # ── Streamlit ──────────────────────────────────────────────
 .streamlit/

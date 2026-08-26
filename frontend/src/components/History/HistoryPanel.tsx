@@ -15,8 +15,18 @@ export const HistoryPanel: React.FC = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
 
-  // TODO: Fetch from backend when API is connected
-  const [historyItems] = useState<HistoryItem[]>([]);
+  const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
+
+  React.useEffect(() => {
+    try {
+      const stored = localStorage.getItem('math_tutor_history');
+      if (stored) {
+        setHistoryItems(JSON.parse(stored));
+      }
+    } catch (e) {
+      console.error('Failed to load history', e);
+    }
+  }, []);
 
   const filteredItems = historyItems.filter(
     (item) =>
@@ -33,7 +43,7 @@ export const HistoryPanel: React.FC = () => {
 
       {/* Search bar */}
       <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
-        <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'hsl(var(--text-muted))' }} />
+        <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
         <input
           type="text"
           className="input"
@@ -63,7 +73,7 @@ export const HistoryPanel: React.FC = () => {
                 <div style={{ fontWeight: 500, marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {item.problem}
                 </div>
-                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: 'hsl(var(--text-secondary))' }}>
+                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                   <span>{item.topic}</span>
                   <span>{item.date}</span>
                 </div>

@@ -9,7 +9,7 @@ import logging
 import time
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.src.config import settings
@@ -33,7 +33,8 @@ async def lifespan(app: FastAPI):
     """Startup and shutdown events for the FastAPI application."""
     logger.info("🚀 Starting AI Math Tutor API...")
     logger.info(f"   Environment: {settings.environment}")
-    logger.info(f"   LLM Model: {settings.llm_model}")
+    logger.info(f"   Groq Primary Model: {settings.groq_primary_model}")
+    logger.info(f"   Groq Fallbacks: {settings.groq_model_fallbacks}")
     logger.info(f"   Vector DB: {settings.vector_db_type}")
 
     # Initialize Firebase Admin SDK
@@ -62,19 +63,51 @@ app = FastAPI(
 )
 
 from backend.src.api.limiter import limiter, _rate_limit_exceeded_handler, RateLimitExceeded
+from fastapi.responses import JSONResponse
+
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Sanitize all unhandled exceptions to prevent exposing stack traces or secrets."""
+    logger.error(f"Unhandled server error: {str(exc.__class__.__name__)}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "An internal server error occurred."}
+    )
+
+
+# ── Security Headers Middleware ────────────────────────────────────────
+from starlette.middleware.base import BaseHTTPMiddleware
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        response.headers["Content-Security-Policy"] = "default-src 'self'"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        return response
+
+app.add_middleware(SecurityHeadersMiddleware)
 
 # ── CORS Middleware ────────────────────────────────────────────────────
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
+if settings.environment == "production":
+    allowed_origins = ["https://advanced-math-ai.vercel.app"]
+else:
+    allowed_origins = [
         "http://localhost:3000",      # React dev server
         "http://localhost:5173",      # Vite dev server
         "http://localhost:8501",      # Streamlit
         "https://advanced-math-ai.vercel.app", # Vercel production
-    ],
+    ]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -90,11 +123,12 @@ from backend.src.api.v1 import quiz
 app.include_router(quiz.router, prefix="/api/v1/quiz", tags=["Quiz"])
 
 # ── New Differentiation Feature Routes ─────────────────────────────────
-from backend.src.api.v1 import check_work, hints, teach, practice
+from backend.src.api.v1 import check_work, hints, teach, practice, share
 app.include_router(check_work.router)
 app.include_router(hints.router)
 app.include_router(teach.router)
 app.include_router(practice.router)
+app.include_router(share.router, prefix="/api/v1", tags=["Share"])
 
 @app.get("/health")
 async def health_check():
@@ -119,7 +153,7 @@ async def health_check():
         "environment": settings.environment,
         "version": "2.0.0",
         "kb_docs": kb_docs,
-        "llm_model": settings.llm_model,
+        "llm_model": settings.groq_primary_model,
         "vector_db": settings.vector_db_type,
     }
 

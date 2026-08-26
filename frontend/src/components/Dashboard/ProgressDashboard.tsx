@@ -76,7 +76,7 @@ export const ProgressDashboard: React.FC = () => {
       {/* Stat Cards */}
       <div className="stats-grid" style={{ marginBottom: 'var(--space-xl)' }}>
         <div className="stat-card">
-          <div className="stat-icon" style={{ backgroundColor: 'hsla(38, 92%, 50%, 0.1)', color: 'hsl(var(--warning))' }}>
+          <div className="stat-icon" style={{ backgroundColor: 'rgba(245, 158, 11, 0.12)', color: 'var(--warning)' }}>
             <Flame size={28} />
           </div>
           <div>
@@ -86,7 +86,7 @@ export const ProgressDashboard: React.FC = () => {
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon" style={{ backgroundColor: 'hsla(217, 91%, 60%, 0.1)', color: 'hsl(var(--accent-primary))' }}>
+          <div className="stat-icon" style={{ backgroundColor: 'rgba(99, 102, 241, 0.12)', color: 'var(--accent)' }}>
             <Trophy size={28} />
           </div>
           <div>
@@ -96,7 +96,7 @@ export const ProgressDashboard: React.FC = () => {
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon" style={{ backgroundColor: 'hsla(142, 76%, 36%, 0.1)', color: 'hsl(var(--success))' }}>
+          <div className="stat-icon" style={{ backgroundColor: 'rgba(16, 185, 129, 0.12)', color: 'var(--success)' }}>
             <CheckCircle size={28} />
           </div>
           <div>
@@ -106,7 +106,7 @@ export const ProgressDashboard: React.FC = () => {
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon" style={{ backgroundColor: 'hsla(280, 70%, 60%, 0.1)', color: 'hsl(var(--accent-secondary))' }}>
+          <div className="stat-icon" style={{ backgroundColor: 'rgba(168, 85, 247, 0.12)', color: 'var(--accent-secondary)' }}>
             <Star size={28} />
           </div>
           <div>
@@ -133,7 +133,7 @@ export const ProgressDashboard: React.FC = () => {
               return (
                 <div key={i} title={`${dateStr}: ${count} solved`} style={{
                   aspectRatio: '1',
-                  backgroundColor: count > 0 ? 'hsl(var(--success))' : 'hsl(var(--bg-tertiary))',
+                  backgroundColor: count > 0 ? 'var(--success)' : 'var(--bg-tertiary)',
                   borderRadius: '3px',
                   opacity: count > 0 ? Math.min(1, 0.4 + (count * 0.15)) : 0.5
                 }} />
@@ -150,12 +150,12 @@ export const ProgressDashboard: React.FC = () => {
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             {stats.weak_topics.length > 0 ? stats.weak_topics.map((topic, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 0.75rem', backgroundColor: 'hsla(var(--accent-primary), 0.08)', borderRadius: 'var(--radius-sm)' }}>
-                <BookOpen size={16} style={{ color: 'hsl(var(--accent-primary))', flexShrink: 0 }} />
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 0.75rem', backgroundColor: 'var(--accent-subtle)', borderRadius: 'var(--radius-sm)' }}>
+                <BookOpen size={16} style={{ color: 'var(--accent)', flexShrink: 0 }} />
                 <span style={{ fontWeight: 500, fontSize: '0.9rem' }}>{topic}</span>
               </div>
             )) : (
-              <p style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.9rem' }}>{t('progress.noWeakTopics')}</p>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{t('progress.noWeakTopics')}</p>
             )}
           </div>
         </div>
@@ -169,14 +169,14 @@ export const ProgressDashboard: React.FC = () => {
         <div style={{ width: '100%', height: 280 }}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="date" stroke="hsl(var(--text-muted))" fontSize={12} />
-              <YAxis stroke="hsl(var(--text-muted))" fontSize={12} allowDecimals={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis dataKey="date" stroke="var(--text-muted)" fontSize={12} />
+              <YAxis stroke="var(--text-muted)" fontSize={12} allowDecimals={false} />
               <Tooltip
-                contentStyle={{ backgroundColor: 'hsl(var(--bg-elevated))', border: '1px solid hsl(var(--border))', borderRadius: 'var(--radius)', fontSize: '0.85rem' }}
-                itemStyle={{ color: 'hsl(var(--accent-primary))' }}
+                contentStyle={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', fontSize: '0.85rem' }}
+                itemStyle={{ color: 'var(--accent)' }}
               />
-              <Line type="monotone" dataKey="solved" name="Questions Solved" stroke="hsl(var(--accent-primary))" strokeWidth={2.5} dot={{ r: 3, fill: 'hsl(var(--accent-primary))' }} activeDot={{ r: 6 }} />
+              <Line type="monotone" dataKey="solved" name="Questions Solved" stroke="var(--accent)" strokeWidth={2.5} dot={{ r: 3, fill: 'var(--accent)' }} activeDot={{ r: 6 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>

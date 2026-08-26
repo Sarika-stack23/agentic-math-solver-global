@@ -21,13 +21,9 @@ logger = logging.getLogger("math_assistant.gemini")
 
 _GEMINI_CLIENT = None
 
-def _get_gemini_client(custom_api_key: str = None):
+def _get_gemini_client():
     from google import genai
     
-    # If a custom key is provided, always create a fresh client
-    if custom_api_key:
-        return genai.Client(api_key=custom_api_key)
-        
     global _GEMINI_CLIENT
     if _GEMINI_CLIENT is None:
         api_key = settings.gemini_api_key
@@ -65,11 +61,10 @@ def _get_safety_settings():
 class GeminiService:
     """Google Gemini text-based math query service with automatic fallback."""
 
-    def __init__(self, custom_api_key: str = None):
+    def __init__(self):
         self.primary_model = settings.gemini_primary_model
         self.fallback_model = settings.gemini_fallback_model
         self.prompt_service = PromptService()
-        self.custom_api_key = custom_api_key
 
     def query(self, user_input: str, context: str = "", chat_history: list = None) -> str:
         """Send a math query to Gemini and return the response."""
@@ -92,7 +87,7 @@ class GeminiService:
 
         models_to_try = [self.primary_model, self.fallback_model]
         last_error = None
-        client = _get_gemini_client(self.custom_api_key)
+        client = _get_gemini_client()
 
         config = types.GenerateContentConfig(
             temperature=settings.gemini_temperature,
@@ -122,15 +117,20 @@ class GeminiService:
                     err_str = str(e).lower()
                     logger.warning(f"Gemini {model_name} attempt {attempt+1} failed: {e}")
 
-                    if "429" in str(e) or "resource_exhausted" in err_str or "quota" in err_str:
-                        logger.info(f"Rate limit on {model_name}, trying fallback...")
-                        time.sleep(1)
-                        break  # Skip to next model
-                    elif "timeout" in err_str or "deadline" in err_str:
-                        time.sleep(1)
+                    if "429" in err_str or "resource_exhausted" in err_str or "quota" in err_str:
+                        if attempt == 0:
+                            logger.info(f"Rate limit on {model_name}, retrying with backoff...")
+                            time.sleep(2)
+                            continue
+                        else:
+                            logger.info(f"Rate limit on {model_name} exhausted, trying fallback model...")
+                            break  # Skip to next model
+                    elif any(code in err_str for code in ["500", "502", "503", "504", "timeout", "deadline"]):
+                        logger.info(f"Transient error on {model_name}, retrying... ({err_str})")
+                        time.sleep(2 ** attempt)
                         continue
                     else:
-                        break  # Non-retryable
+                        break  # Non-retryable (e.g. 400 Bad Request, 401 Invalid Key)
 
         logger.error(f"All Gemini models failed: {last_error}")
         return f"⚠️ Gemini API error: {last_error}"
@@ -152,7 +152,7 @@ class GeminiService:
         parts.append(f"Student: {user_input}\nTeacher: ")
         prompt = "".join(parts)
 
-        client = _get_gemini_client(self.custom_api_key)
+        client = _get_gemini_client()
         config = types.GenerateContentConfig(
             temperature=settings.gemini_temperature,
             max_output_tokens=settings.gemini_max_tokens,
@@ -199,13 +199,12 @@ class GeminiService:
 class GeminiVisionService:
     """Gemini Vision for extracting math from images."""
 
-    def __init__(self, custom_api_key: str = None):
+    def __init__(self):
         self.model_name = settings.gemini_vision_model
-        self.custom_api_key = custom_api_key
 
     def extract_math_from_image(self, image_bytes: bytes, mime_type: str = "image/jpeg") -> str:
         from google.genai import types
-        client = _get_gemini_client(self.custom_api_key)
+        client = _get_gemini_client()
 
         prompt = (
             "You are a math OCR expert. Extract ALL mathematical content from this image.\n\n"
@@ -238,7 +237,7 @@ class GeminiVisionService:
 
     def extract_and_solve(self, image_bytes: bytes, mime_type: str = "image/jpeg") -> Dict[str, str]:
         from google.genai import types
-        client = _get_gemini_client(self.custom_api_key)
+        client = _get_gemini_client()
 
         prompt = (
             "You are an expert mathematics tutor. Look at this image.\n\n"

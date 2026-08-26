@@ -42,15 +42,15 @@ export const GraphPanel: React.FC = () => {
   return (
     <div className="main-content" style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', width: '100%', height: '100vh', display: 'flex', flexDirection: 'column' }}>
       <h2 style={{ marginBottom: '1.5rem' }}>📈 Interactive Graphing</h2>
-      
+
       <div className="glass" style={{ padding: '1.5rem', marginBottom: '1.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: '300px' }}>
             <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>Graphing</h3>
             <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
             <label style={{ fontWeight: 'bold' }}>f(x) = </label>
-            <input 
-                type="text" 
-                className="input" 
+            <input
+                type="text"
+                className="input"
                 style={{ flex: 1 }}
                 value={inputVal}
                 onChange={(e) => setInputVal(e.target.value)}
@@ -108,29 +108,29 @@ export const GraphPanel: React.FC = () => {
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-              <XAxis 
-                  dataKey="x" 
-                  type="number" 
-                  domain={['dataMin', 'dataMax']} 
-                  stroke="var(--text-secondary)" 
+              <XAxis
+                  dataKey="x"
+                  type="number"
+                  domain={['dataMin', 'dataMax']}
+                  stroke="var(--text-secondary)"
                   tickFormatter={(val) => val.toFixed(1)}
               />
-              <YAxis 
-                  stroke="var(--text-secondary)" 
+              <YAxis
+                  stroke="var(--text-secondary)"
                   domain={['auto', 'auto']}
               />
-              <Tooltip 
+              <Tooltip
                   contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: '8px' }}
                   labelFormatter={(val) => `x = ${val}`}
                   formatter={(val: any) => [`y = ${val}`, '']}
               />
               <ReferenceLine y={0} stroke="rgba(255,255,255,0.3)" />
               <ReferenceLine x={0} stroke="rgba(255,255,255,0.3)" />
-              <Line 
-                  type="monotone" 
-                  dataKey="y" 
-                  stroke="hsl(var(--accent-primary))" 
-                  strokeWidth={3} 
+              <Line
+                  type="monotone"
+                  dataKey="y"
+                  stroke="var(--accent)"
+                  strokeWidth={3}
                   dot={false}
                   isAnimationActive={false}
               />

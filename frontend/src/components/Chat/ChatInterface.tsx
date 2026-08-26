@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
-import { Send, Image as ImageIcon, ThumbsUp, ThumbsDown, Copy, FileText, Camera, X, Plus, Edit2, Lightbulb, RefreshCw, CheckCircle, HelpCircle, BookOpen, Sparkles } from 'lucide-react';
+import { Send, Image as ImageIcon, ThumbsUp, ThumbsDown, Copy, FileText, Camera, X, Plus, Edit2, Lightbulb, RefreshCw, CheckCircle, HelpCircle, BookOpen, Sparkles, Share2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLocation } from 'react-router-dom';
 import { t, tArray } from '../../i18n';
@@ -36,7 +36,7 @@ const LoadingIndicator: React.FC = () => {
   }, []);
 
   return (
-    <div className="loading-indicator animate-fade-in" style={{ background: 'hsl(var(--bg-elevated))', border: '1px solid hsl(var(--border))', borderRadius: 'var(--radius-lg)', padding: '1rem 1.25rem', alignSelf: 'flex-start' }}>
+    <div className="loading-indicator animate-fade-in" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '1rem 1.25rem', alignSelf: 'flex-start' }}>
       <div className="loading-spinner" />
       <span>{t(loadingStages[stageIndex])}</span>
     </div>
@@ -55,15 +55,18 @@ export const MessageActionButtons: React.FC<{ content: string }> = ({ content })
   };
 
   return (
-    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', paddingTop: '0.5rem', borderTop: '1px solid hsl(var(--border-subtle))', justifyContent: 'flex-end', alignItems: 'center' }}>
-      <button title={t('common.helpful')} onClick={() => setFeedback('up')} className="btn btn-ghost" style={{ color: feedback === 'up' ? 'hsl(var(--success))' : undefined, opacity: feedback === 'up' ? 1 : 0.6 }} aria-label={t('common.helpful')}>
+    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border-subtle)', justifyContent: 'flex-end', alignItems: 'center' }}>
+      <button title={t('common.helpful')} onClick={() => setFeedback('up')} className="btn btn-ghost" style={{ color: feedback === 'up' ? 'var(--success)' : undefined, opacity: feedback === 'up' ? 1 : 0.6 }} aria-label={t('common.helpful')}>
         <ThumbsUp size={14} />
       </button>
-      <button title={t('common.notHelpful')} onClick={() => setFeedback('down')} className="btn btn-ghost" style={{ color: feedback === 'down' ? 'hsl(var(--danger))' : undefined, opacity: feedback === 'down' ? 1 : 0.6 }} aria-label={t('common.notHelpful')}>
+      <button title={t('common.notHelpful')} onClick={() => setFeedback('down')} className="btn btn-ghost" style={{ color: feedback === 'down' ? 'var(--danger)' : undefined, opacity: feedback === 'down' ? 1 : 0.6 }} aria-label={t('common.notHelpful')}>
         <ThumbsDown size={14} />
       </button>
-      <button title={t('common.copy')} onClick={handleCopy} className="btn btn-ghost" style={{ color: copied ? 'hsl(var(--success))' : undefined, opacity: copied ? 1 : 0.6, display: 'flex', alignItems: 'center', gap: '4px' }} aria-label={t('common.copy')}>
+      <button title={t('common.copy')} onClick={handleCopy} className="btn btn-ghost" style={{ color: copied ? 'var(--success)' : undefined, opacity: copied ? 1 : 0.6, display: 'flex', alignItems: 'center', gap: '4px' }} aria-label={t('common.copy')}>
         {copied ? <span style={{ fontSize: '0.75rem' }}>{t('common.copied')}</span> : <Copy size={14} />}
+      </button>
+      <button title="Share" onClick={() => { navigator.clipboard.writeText(window.location.origin + '/solve?q=' + encodeURIComponent(content.substring(0, 200))); }} className="btn btn-ghost" style={{ opacity: 0.6 }} aria-label="Share solution">
+        <Share2 size={14} />
       </button>
     </div>
   );
@@ -73,6 +76,12 @@ export const MessageActionButtons: React.FC<{ content: string }> = ({ content })
 const SolutionActions: React.FC<{ problem: string; onAction: (query: string) => void }> = ({ problem, onAction }) => {
   return (
     <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.75rem', paddingTop: '0.5rem' }}>
+      <button className="action-chip" onClick={() => onAction(`Check my work for: ${problem}`)}>
+        <CheckCircle size={14} /> {t('solve.actions.checkMyWork')}
+      </button>
+      <button className="action-chip" onClick={() => onAction(`Something looks wrong? Check Again and verify step-by-step for: ${problem}`)}>
+        <RefreshCw size={14} /> {t('solve.actions.checkAgain')}
+      </button>
       <button className="action-chip" onClick={() => onAction(`Explain WHY each step works in this solution for: ${problem}`)}>
         <HelpCircle size={14} /> {t('solve.actions.why')}
       </button>
@@ -99,6 +108,7 @@ export const ChatInterface: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [sessionId] = useState(() => 'session-' + Date.now().toString());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showAttachments, setShowAttachments] = useState(false);
   const location = useLocation();
@@ -159,7 +169,6 @@ export const ChatInterface: React.FC = () => {
     setIsLoading(true);
 
     const token = await user.getIdToken();
-    const customKey = localStorage.getItem('custom_gemini_api_key') || "";
     const assistantMsgId = (Date.now() + 1).toString();
     setMessages(prev => [...prev, { id: assistantMsgId, role: 'assistant', content: '', verificationStatus: '' }]);
 
@@ -168,12 +177,11 @@ export const ChatInterface: React.FC = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'X-Gemini-API-Key': customKey
+          'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ query: query, session_id: 'default' })
+        body: JSON.stringify({ query: query, session_id: sessionId })
       });
-
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       if (!response.body) throw new Error("No readable stream");
 
       const reader = response.body.getReader();
@@ -204,6 +212,22 @@ export const ChatInterface: React.FC = () => {
           }
         }
       }
+
+      // Save to local history
+      try {
+        const history = JSON.parse(localStorage.getItem('math_tutor_history') || '[]');
+        if (!history.find((h: any) => h.problem === query)) {
+          history.unshift({
+            id: sessionId,
+            problem: query.substring(0, 100),
+            topic: 'Math Problem',
+            date: new Date().toLocaleDateString(),
+            result: 'Solved'
+          });
+          localStorage.setItem('math_tutor_history', JSON.stringify(history.slice(0, 50)));
+        }
+      } catch (e) {}
+
       await incrementProgress();
     } catch (error) {
       console.error("Chat error:", error);
@@ -376,7 +400,7 @@ export const ChatInterface: React.FC = () => {
             <h2 className="text-gradient" style={{ fontSize: '1.8rem', marginBottom: '0.75rem' }}>
               {t('home.headline')}
             </h2>
-            <p style={{ color: 'hsl(var(--text-secondary))', marginBottom: '2rem', maxWidth: '400px' }}>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem', maxWidth: '400px' }}>
               {t('home.subheadline')}
             </p>
             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center', maxWidth: '600px' }}>
@@ -404,12 +428,19 @@ export const ChatInterface: React.FC = () => {
               )}
 
               {/* Verification badge */}
-              {msg.role === 'assistant' && msg.verificationStatus === 'verified' && msg.content && !isLoading && (
-                <div style={{ marginBottom: '0.5rem' }}>
-                  <span className="badge-verified">
-                    <CheckCircle size={12} /> {t('solve.verification.verified')}
-                  </span>
-                </div>
+              {msg.role === 'assistant' && (
+                <>
+                {msg.verificationStatus === 'verified' && (
+                  <div className="badge-verified" style={{ marginBottom: '0.75rem' }}>
+                    <CheckCircle size={14} /> ✓ Symbolically verified
+                  </div>
+                )}
+                {msg.verificationStatus === 'unverified' && (
+                  <div className="badge-unverified" style={{ marginBottom: '0.75rem', opacity: 0.8 }}>
+                    <HelpCircle size={14} /> Verification unavailable
+                  </div>
+                )}
+                </>
               )}
 
               {/* Image */}
@@ -456,7 +487,7 @@ export const ChatInterface: React.FC = () => {
       </div>
 
       {/* Input area */}
-      <form id="solve-form" onSubmit={handleSubmit} style={{ display: 'flex', gap: '0.5rem', paddingTop: 'var(--space-sm)', borderTop: '1px solid hsl(var(--border))', flexShrink: 0 }}>
+      <form id="solve-form" onSubmit={handleSubmit} style={{ display: 'flex', gap: '0.5rem', paddingTop: 'var(--space-sm)', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
         <input type="file" accept="image/*" style={{ display: 'none' }} ref={fileInputRef} onChange={handleImageUpload} />
         <input type="file" accept=".pdf,application/pdf" style={{ display: 'none' }} ref={pdfInputRef} onChange={handlePdfUpload} />
 
