@@ -15,11 +15,11 @@ async function signupAndLogin(page: any) {
     }
   });
   await page.goto('/login');
-  await page.getByRole('button', { name: 'Sign Up', exact: true }).click();
+  await page.getByRole('button', { name: 'Create one now', exact: true }).click();
   const testEmail = `test-${Date.now()}@example.com`;
   await page.getByPlaceholder('Email').fill(testEmail);
   await page.getByPlaceholder('Password').fill('Password123!');
-  await page.getByRole('button', { name: 'Sign Up', exact: true }).click();
+  await page.getByRole('button', { name: 'Create Account', exact: true }).click();
   await page.waitForURL('**/')
   await page.goto('/solve');
 }
@@ -59,11 +59,11 @@ test.describe('Global AI Math Tutor - Core E2E', () => {
     // Verify title
     await expect(page).toHaveTitle(/Math Tutor/i);
     // Verify main input is visible
-    await expect(page.locator('input[placeholder*="Type your math problem"]')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('input[placeholder*="Enter a math problem"]')).toBeVisible({ timeout: 10000 });
   });
 
   test('Basic Chat Flow', async ({ page }) => {
-    const input = page.locator('input[placeholder*="Type your math problem"]');
+    const input = page.locator('input[placeholder*="Enter a math problem"]');
     await expect(input).toBeVisible({ timeout: 10000 });
     await input.fill('2x + 5 = 15');
     await input.press('Enter');
@@ -77,7 +77,7 @@ test.describe('Global AI Math Tutor - Core E2E', () => {
     // Mock the backend to avoid LLM quota issues
     await mockChatStream(page);
 
-    const input = page.locator('input[placeholder*="Type your math problem"]');
+    const input = page.locator('input[placeholder*="Enter a math problem"]');
     await expect(input).toBeVisible({ timeout: 10000 });
     await input.fill('2x + 5 = 15');
     await input.press('Enter');
@@ -111,7 +111,7 @@ test.describe('Global AI Math Tutor - Core E2E', () => {
 
 
   test('XSS Escape Verification', async ({ page }) => {
-    const input = page.locator('input[placeholder*="Type your math problem"]');
+    const input = page.locator('input[placeholder*="Enter a math problem"]');
     await expect(input).toBeVisible({ timeout: 10000 });
     await input.fill('<script>alert("xss")</script>');
     await input.press('Enter');

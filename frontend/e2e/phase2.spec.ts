@@ -47,7 +47,7 @@ async function signupAndLogin(page: any) {
   await page.goto('/login');
   
   // Click the toggle to switch to Sign Up mode
-  await page.getByRole('button', { name: 'Sign Up', exact: true }).click();
+  await page.getByRole('button', { name: 'Create one now', exact: true }).click();
   
   // Fill credentials
   const testEmail = `test-${Date.now()}@example.com`;
@@ -55,7 +55,7 @@ async function signupAndLogin(page: any) {
   await page.getByPlaceholder('Password').fill('Password123!');
   
   // Click the submit button (which is now 'Sign Up')
-  await page.getByRole('button', { name: 'Sign Up', exact: true }).click();
+  await page.getByRole('button', { name: 'Create Account', exact: true }).click();
   
   // Wait for redirect to home
   await expect(page).toHaveURL('/');

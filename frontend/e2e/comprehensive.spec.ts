@@ -30,11 +30,11 @@ async function signupAndLogin(page: any) {
   // No backend mocks to allow real E2E backend testing
 
   await page.goto('/login');
-  await page.getByRole('button', { name: 'Sign Up', exact: true }).click();
+  await page.getByRole('button', { name: 'Create one now', exact: true }).click();
   const testEmail = `test-${Date.now()}@example.com`;
   await page.getByPlaceholder('Email').fill(testEmail);
   await page.getByPlaceholder('Password').fill('Password123!');
-  await page.getByRole('button', { name: 'Sign Up', exact: true }).click();
+  await page.getByRole('button', { name: 'Create Account', exact: true }).click();
   await expect(page).toHaveURL('/');
 }
 
@@ -73,7 +73,7 @@ test.describe('Comprehensive Feature E2E', () => {
     await mockChatStream(page);
 
     await page.goto('/solve');
-    const input = page.locator('input[placeholder*="Type your math problem"]');
+    const input = page.locator('input[placeholder*="Enter a math problem"]');
     await expect(input).toBeVisible({ timeout: 10000 });
     
     // Initial message
@@ -127,7 +127,7 @@ test.describe('Comprehensive Feature E2E', () => {
 
     await page.goto('/solve');
     // Generate a problem first to populate history
-    const input = page.locator('input[placeholder*="Type your math problem"]');
+    const input = page.locator('input[placeholder*="Enter a math problem"]');
     await input.fill('5 + 5');
     await input.press('Enter');
     
@@ -154,7 +154,7 @@ test.describe('Comprehensive Feature E2E', () => {
   test('Image/Vision Upload Flow', async ({ page }) => {
     await page.goto('/solve');
     // Ensure input is fully loaded so buttons are enabled
-    await expect(page.locator('input[placeholder*="Type your math problem"]')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('input[placeholder*="Enter a math problem"]')).toBeVisible({ timeout: 10000 });
     
     const fileChooserPromise = page.waitForEvent('filechooser');
     
@@ -175,7 +175,7 @@ test.describe('Comprehensive Feature E2E', () => {
   test('PDF Document / RAG Upload Flow', async ({ page }) => {
     await page.goto('/solve');
     // Ensure input is fully loaded so buttons are enabled
-    await expect(page.locator('input[placeholder*="Type your math problem"]')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('input[placeholder*="Enter a math problem"]')).toBeVisible({ timeout: 10000 });
     
     const fileChooserPromise = page.waitForEvent('filechooser');
     
@@ -200,7 +200,7 @@ test.describe('Comprehensive Feature E2E', () => {
       await route.fulfill({ status: 500, body: 'Internal Server Error' });
     });
 
-    const input = page.locator('input[placeholder*="Type your math problem"]');
+    const input = page.locator('input[placeholder*="Enter a math problem"]');
     await input.fill('Will this crash?');
     await input.press('Enter');
 

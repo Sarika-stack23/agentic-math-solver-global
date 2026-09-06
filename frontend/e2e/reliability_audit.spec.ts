@@ -31,14 +31,14 @@ async function authenticateUser(page: Page): Promise<void> {
     }
   }
 
-  await page.getByPlaceholder('Email').fill(TEST_EMAIL);
-  await page.getByPlaceholder('Password').fill(TEST_PASSWORD);
+  await page.locator('input[type="email"]').fill(TEST_EMAIL);
+  await page.locator('input[type="password"]').fill(TEST_PASSWORD);
   await page.click('button[type="submit"]');
 
   // Wait for either: successful redirect to "/" OR an error message
   const successOrError = await Promise.race([
     page.waitForURL(/\/$/, { timeout: 15000 }).then(() => 'success' as const),
-    page.locator('.login-card >> text=/error|invalid|not found/i').waitFor({ timeout: 15000 }).then(() => 'error' as const),
+    page.locator('text=/error|invalid|not found/i').waitFor({ timeout: 15000 }).then(() => 'error' as const),
   ]).catch(() => 'timeout' as const);
 
   if (successOrError === 'success') {
@@ -50,14 +50,14 @@ async function authenticateUser(page: Page): Promise<void> {
   await page.goto(`${BASE_URL}/login`);
 
   // Ensure we're in Sign Up mode
-  const signUpToggle = page.locator('button', { hasText: 'Sign Up' });
+  const signUpToggle = page.locator('button', { hasText: 'Create one now' });
   if (await signUpToggle.isVisible()) {
     await signUpToggle.click();
     await page.waitForTimeout(300);
   }
 
-  await page.getByPlaceholder('Email').fill(TEST_EMAIL);
-  await page.getByPlaceholder('Password').fill(TEST_PASSWORD);
+  await page.locator('input[type="email"]').fill(TEST_EMAIL);
+  await page.locator('input[type="password"]').fill(TEST_PASSWORD);
   await page.click('button[type="submit"]');
 
   // Wait for successful redirect after sign up
@@ -192,7 +192,7 @@ test.describe('Real-Browser Reliability Audit', () => {
     await expect(page).toHaveURL(/\/solve/);
 
     // Ask a question first
-    const chatInput = page.getByPlaceholder('Type your math problem...');
+    const chatInput = page.getByPlaceholder('Enter a math problem...');
     await chatInput.fill('What is the area of a circle with radius 5?');
     await chatInput.press('Enter');
 
