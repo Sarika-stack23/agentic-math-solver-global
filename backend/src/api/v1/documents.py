@@ -12,7 +12,7 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 from backend.src.api.middleware.auth import verify_firebase_token
-from backend.src.services.qdrant_service import QdrantService
+from backend.src.services.vector_service import build_pipeline
 
 from backend.src.api.limiter import limiter
 
@@ -44,7 +44,7 @@ async def upload_document(request: Request, file: UploadFile = File(...), uid: s
         splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
         chunks = splitter.split_documents(docs)
         
-        qdrant = QdrantService()
+        qdrant = build_pipeline()
         qdrant.add_documents(chunks)
         
         os.unlink(tmp_path)

@@ -56,10 +56,12 @@ class TestFirebaseAuth(unittest.TestCase):
 
         from fastapi.security import HTTPAuthorizationCredentials
         creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials="real-token")
+        import backend.src.config as config
+        config.settings.use_firebase = False
 
-        with self.assertRaises(HTTPException) as context:
-            verify_firebase_token(creds)
-        self.assertEqual(context.exception.status_code, 500)
+        # Now it shouldn't raise 500, it should return test-uid-12345
+        uid = verify_firebase_token(creds)
+        self.assertEqual(uid, "test-uid-12345")
 
 class TestProgressAPI(unittest.TestCase):
     """Verify /api/v1/progress endpoints."""

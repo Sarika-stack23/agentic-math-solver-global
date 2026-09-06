@@ -26,3 +26,10 @@ dist-ssr
 # Playwright
 playwright-report/
 test-results/
+
+# Environment variables — NEVER commit these
+.env
+.env.local
+.env.production
+.env.development
+*.env

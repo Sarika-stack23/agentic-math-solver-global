@@ -15,6 +15,7 @@ interface UserStats {
 export const ProgressDashboard: React.FC = () => {
   const { user } = useAuth();
   const [stats, setStats] = useState<UserStats | null>(null);
+  const [errorState, setErrorState] = useState<string | null>(null);
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
   useEffect(() => {
@@ -37,16 +38,36 @@ export const ProgressDashboard: React.FC = () => {
             weak_topics: data.weak_topics || [],
             activity_map: data.activity_map || {}
           });
+          setErrorState(null);
         } else {
-          setStats({ streak: 0, total_solved: 0, accuracy: 0, weak_topics: [], activity_map: {} });
+          let errorDetail = "Progress persistence is temporarily unavailable.";
+          try {
+            const errorData = await response.json();
+            if (errorData.detail) errorDetail = errorData.detail;
+          } catch (e) {
+            // Ignore JSON parse errors on failure
+          }
+          setErrorState(errorDetail);
         }
       } catch (err) {
         console.error("Failed to fetch progress", err);
-        setStats({ streak: 0, total_solved: 0, accuracy: 0, weak_topics: [], activity_map: {} });
+        setErrorState("Progress persistence is temporarily unavailable. Network error.");
       }
     };
     fetchProgress();
   }, [user, apiUrl]);
+
+  if (errorState) {
+    return (
+      <div className="page-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ padding: '2rem', textAlign: 'center', backgroundColor: 'var(--bg-elevated)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
+          <h2 style={{ marginBottom: '0.5rem', color: 'var(--text-primary)' }}>Progress Unavailable</h2>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>{errorState}</p>
+          <button className="btn btn-primary" onClick={() => window.location.reload()}>Retry</button>
+        </div>
+      </div>
+    );
+  }
 
   if (!stats) {
     return (
@@ -73,8 +94,16 @@ export const ProgressDashboard: React.FC = () => {
         <h2>{t('progress.title')}</h2>
       </div>
 
-      {/* Stat Cards */}
-      <div className="stats-grid" style={{ marginBottom: 'var(--space-xl)' }}>
+      {stats.total_solved === 0 ? (
+        <div style={{ padding: '3rem', textAlign: 'center', backgroundColor: 'var(--bg-elevated)', borderRadius: 'var(--radius-lg)', border: '1px dashed var(--border)', marginTop: '2rem' }}>
+          <Trophy size={48} style={{ color: 'var(--accent)', margin: '0 auto 1rem', opacity: 0.5 }} />
+          <h3 style={{ marginBottom: '0.5rem' }}>No Problems Solved Yet</h3>
+          <p style={{ color: 'var(--text-secondary)' }}>Start solving problems to see your progress here.</p>
+        </div>
+      ) : (
+        <>
+          {/* Stat Cards */}
+          <div className="stats-grid" style={{ marginBottom: 'var(--space-xl)' }}>
         <div className="stat-card">
           <div className="stat-icon" style={{ backgroundColor: 'rgba(245, 158, 11, 0.12)', color: 'var(--warning)' }}>
             <Flame size={28} />
@@ -181,6 +210,8 @@ export const ProgressDashboard: React.FC = () => {
           </ResponsiveContainer>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 };

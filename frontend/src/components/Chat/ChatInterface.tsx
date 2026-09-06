@@ -46,12 +46,131 @@ const LoadingIndicator: React.FC = () => {
 /* ── Message Action Buttons ─────────────────────────────────────────── */
 export const MessageActionButtons: React.FC<{ content: string }> = ({ content }) => {
   const [copied, setCopied] = useState(false);
+  const [shared, setShared] = useState(false);
   const [feedback, setFeedback] = useState<'up' | 'down' | null>(null);
 
+  const getCleanText = () => {
+    let text = content;
+
+    // 1. Strip markdown bold/italic/headers
+    text = text.replace(/\*\*(.*?)\*\*/g, '$1');
+    text = text.replace(/\*(.*?)\*/g, '$1');
+    text = text.replace(/#+\s?(.*?)\n/g, '$1\n');
+
+    // 2. Strip \( \) and \[ \] math delimiters FIRST (keep inner content)
+    text = text.replace(/\\\([\s\S]*?\\\)/g, (m) => m.slice(2, -2));
+    text = text.replace(/\\\[[\s\S]*?\\\]/g, (m) => m.slice(2, -2));
+
+    // 3. Strip $$ ... $$ and $ ... $ (keep inner content)
+    text = text.replace(/\$\$([\s\S]*?)\$\$/g, '$1');
+    text = text.replace(/\$([^$\n]+)\$/g, '$1');
+
+    // 4. Convert known LaTeX commands to readable text/unicode
+    text = text.replace(/\\frac\{([^{}]+)\}\{([^{}]+)\}/g, '($1)/($2)');
+    text = text.replace(/\\sqrt\{([^{}]+)\}/g, '√($1)');
+    text = text.replace(/\\boxed\{([^{}]+)\}/g, '[ $1 ]');
+    text = text.replace(/\\text\{([^{}]+)\}/g, '$1');
+    text = text.replace(/\\pi/g, 'π');
+    text = text.replace(/\\infty/g, '∞');
+    text = text.replace(/\\pm/g, '±');
+    text = text.replace(/\\mp/g, '∓');
+    text = text.replace(/\\cdot/g, '·');
+    text = text.replace(/\\times/g, '×');
+    text = text.replace(/\\div/g, '÷');
+    text = text.replace(/\\leq/g, '≤');
+    text = text.replace(/\\geq/g, '≥');
+    text = text.replace(/\\neq/g, '≠');
+    text = text.replace(/\\approx/g, '≈');
+    text = text.replace(/\\Rightarrow/g, ' ⟹ ');
+    text = text.replace(/\\rightarrow/g, ' → ');
+    text = text.replace(/\\Leftarrow/g, ' ⟸ ');
+    text = text.replace(/\\leftarrow/g, ' ← ');
+    text = text.replace(/\\sin/g, 'sin');
+    text = text.replace(/\\cos/g, 'cos');
+    text = text.replace(/\\tan/g, 'tan');
+    text = text.replace(/\\cot/g, 'cot');
+    text = text.replace(/\\sec/g, 'sec');
+    text = text.replace(/\\csc/g, 'csc');
+    text = text.replace(/\\ln/g, 'ln');
+    text = text.replace(/\\log/g, 'log');
+    text = text.replace(/\\exp/g, 'exp');
+    text = text.replace(/\\alpha/g, 'α');
+    text = text.replace(/\\beta/g, 'β');
+    text = text.replace(/\\gamma/g, 'γ');
+    text = text.replace(/\\delta/g, 'δ');
+    text = text.replace(/\\theta/g, 'θ');
+    text = text.replace(/\\lambda/g, 'λ');
+    text = text.replace(/\\mu/g, 'μ');
+    text = text.replace(/\\sigma/g, 'σ');
+    text = text.replace(/\\omega/g, 'ω');
+    text = text.replace(/\\varepsilon/g, 'ε');
+    text = text.replace(/\\left\(/g, '(');
+    text = text.replace(/\\right\)/g, ')');
+    text = text.replace(/\\left\[/g, '[');
+    text = text.replace(/\\right\]/g, ']');
+    text = text.replace(/\\left\|/g, '|');
+    text = text.replace(/\\right\|/g, '|');
+    text = text.replace(/\^\{([^{}]+)\}/g, '^($1)');
+    text = text.replace(/_\{([^{}]+)\}/g, '_($1)');
+    text = text.replace(/\\,/g, ' ');
+    text = text.replace(/\\ /g, ' ');
+    text = text.replace(/\\quad/g, '  ');
+    text = text.replace(/\\qquad/g, '    ');
+
+    // 5. Remove any remaining raw LaTeX commands and bare braces
+    text = text.replace(/\\[a-zA-Z]+/g, '');
+    text = text.replace(/[{}]/g, '');
+
+    // 6. Clean up excessive newlines
+    text = text.replace(/\n{3,}/g, '\n\n');
+    return text.trim();
+  };
+
+
   const handleCopy = () => {
-    navigator.clipboard.writeText(content);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    const textToCopy = getCleanText();
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }).catch(err => console.error("Clipboard copy failed", err));
+    } else {
+      // Fallback for insecure contexts (e.g. non-localhost network IPs)
+      const textArea = document.createElement("textarea");
+      textArea.value = textToCopy;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-999999px";
+      textArea.style.top = "-999999px";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (err) {
+        console.error('Fallback copy failed', err);
+      }
+      textArea.remove();
+    }
+  };
+
+  const handleShare = async () => {
+    const cleanText = getCleanText();
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: 'Math Solution',
+          text: cleanText
+        });
+      } else {
+        await navigator.clipboard.writeText(cleanText);
+        setShared(true);
+        setTimeout(() => setShared(false), 2000);
+      }
+    } catch (e) {
+      console.log('Share cancelled or failed', e);
+    }
   };
 
   return (
@@ -63,38 +182,38 @@ export const MessageActionButtons: React.FC<{ content: string }> = ({ content })
         <ThumbsDown size={14} />
       </button>
       <button title={t('common.copy')} onClick={handleCopy} className="btn btn-ghost" style={{ color: copied ? 'var(--success)' : undefined, opacity: copied ? 1 : 0.6, display: 'flex', alignItems: 'center', gap: '4px' }} aria-label={t('common.copy')}>
-        {copied ? <span style={{ fontSize: '0.75rem' }}>{t('common.copied')}</span> : <Copy size={14} />}
+        {copied ? <span style={{ fontSize: '0.75rem' }}>{t('common.copied')}</span> : <Copy size={14} /> }
       </button>
-      <button title="Share" onClick={() => { navigator.clipboard.writeText(window.location.origin + '/solve?q=' + encodeURIComponent(content.substring(0, 200))); }} className="btn btn-ghost" style={{ opacity: 0.6 }} aria-label="Share solution">
-        <Share2 size={14} />
+      <button title={t('share.share') || "Share"} onClick={handleShare} className="btn btn-ghost" style={{ color: shared ? 'var(--success)' : undefined, opacity: shared ? 1 : 0.6, display: 'flex', alignItems: 'center', gap: '4px' }} aria-label="Share solution">
+        {shared ? <span style={{ fontSize: '0.75rem' }}>{t('share.copied') || "Copied!"}</span> : <Share2 size={14} />}
       </button>
     </div>
   );
 };
 
 /* ── Solution Action Chips ──────────────────────────────────────────── */
-const SolutionActions: React.FC<{ problem: string; onAction: (query: string) => void }> = ({ problem, onAction }) => {
+const SolutionActions: React.FC<{ problem: string; onAction: (query: string, action?: string) => void }> = ({ problem, onAction }) => {
   return (
     <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.75rem', paddingTop: '0.5rem' }}>
-      <button className="action-chip" onClick={() => onAction(`Check my work for: ${problem}`)}>
+      <button className="action-chip" onClick={() => onAction(problem, 'check')}>
         <CheckCircle size={14} /> {t('solve.actions.checkMyWork')}
       </button>
-      <button className="action-chip" onClick={() => onAction(`Something looks wrong? Check Again and verify step-by-step for: ${problem}`)}>
+      <button className="action-chip" onClick={() => onAction(problem, 'check')}>
         <RefreshCw size={14} /> {t('solve.actions.checkAgain')}
       </button>
-      <button className="action-chip" onClick={() => onAction(`Explain WHY each step works in this solution for: ${problem}`)}>
+      <button className="action-chip" onClick={() => onAction(problem, 'steps')}>
         <HelpCircle size={14} /> {t('solve.actions.why')}
       </button>
-      <button className="action-chip" onClick={() => onAction(`Show me a DIFFERENT METHOD to solve: ${problem}`)}>
+      <button className="action-chip" onClick={() => onAction(problem, 'another')}>
         <RefreshCw size={14} /> {t('solve.actions.anotherMethod')}
       </button>
-      <button className="action-chip" onClick={() => onAction(`Give me a hint for solving: ${problem}`)}>
+      <button className="action-chip" onClick={() => onAction(problem, 'hint')}>
         <Lightbulb size={14} /> {t('solve.actions.hint')}
       </button>
-      <button className="action-chip" onClick={() => onAction(`Teach me how to solve this without giving the answer: ${problem}`)}>
+      <button className="action-chip" onClick={() => onAction(problem, 'teach')}>
         <BookOpen size={14} /> {t('solve.actions.teachMe')}
       </button>
-      <button className="action-chip" onClick={() => onAction(`Generate a similar practice problem to: ${problem}`)}>
+      <button className="action-chip" onClick={() => onAction(problem, 'similar')}>
         <Sparkles size={14} /> {t('solve.actions.similarProblem')}
       </button>
     </div>
@@ -160,10 +279,18 @@ export const ChatInterface: React.FC = () => {
 
   useEffect(() => { scrollToBottom(); }, [messages]);
 
-  const sendMessage = async (query: string) => {
+  const sendMessage = async (query: string, action?: string) => {
     if (!query.trim() || !user) return;
 
-    const userMsg: Message = { id: Date.now().toString(), role: 'user', content: query };
+    let displayQuery = query;
+    if (action === 'check') displayQuery = `Check my work for: ${query}`;
+    else if (action === 'steps') displayQuery = `Explain steps for: ${query}`;
+    else if (action === 'another') displayQuery = `Another method for: ${query}`;
+    else if (action === 'hint') displayQuery = `Hint for: ${query}`;
+    else if (action === 'teach') displayQuery = `Teach me: ${query}`;
+    else if (action === 'similar') displayQuery = `Similar problem to: ${query}`;
+
+    const userMsg: Message = { id: Date.now().toString(), role: 'user', content: displayQuery };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setIsLoading(true);
@@ -179,7 +306,7 @@ export const ChatInterface: React.FC = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ query: query, session_id: sessionId })
+        body: JSON.stringify({ query: query, session_id: sessionId, action: action })
       });
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       if (!response.body) throw new Error("No readable stream");
@@ -218,7 +345,7 @@ export const ChatInterface: React.FC = () => {
         const history = JSON.parse(localStorage.getItem('math_tutor_history') || '[]');
         if (!history.find((h: any) => h.problem === query)) {
           history.unshift({
-            id: sessionId,
+            id: sessionId + '-' + Date.now(),
             problem: query.substring(0, 100),
             topic: 'Math Problem',
             date: new Date().toLocaleDateString(),
@@ -391,21 +518,21 @@ export const ChatInterface: React.FC = () => {
   const lastUserQuery = [...messages].reverse().find(m => m.role === 'user')?.content || '';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: 'var(--space-lg)', maxWidth: '900px', margin: '0 auto', width: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', maxWidth: '900px', margin: '0 auto' }}>
 
-      {/* Messages area */}
-      <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem', paddingBottom: '1rem' }}>
+      {/* Messages area (Document Flow) */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         {messages.length === 0 && (
-          <div className="empty-state animate-fade-in" style={{ flex: 1 }}>
-            <h2 className="text-gradient" style={{ fontSize: '1.8rem', marginBottom: '0.75rem' }}>
+          <div className="empty-state animate-fade-in" style={{ padding: 'var(--space-2xl) 0', maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
+            <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '2.5rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
               {t('home.headline')}
-            </h2>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem', maxWidth: '400px' }}>
+            </h1>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '2.5rem', fontSize: '1.1rem' }}>
               {t('home.subheadline')}
             </p>
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center', maxWidth: '600px' }}>
+            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center' }}>
               {tArray('home.suggestions').map(q => (
-                <button key={q} className="action-chip" onClick={() => { setInput(q); }}>
+                <button key={q} className="btn btn-outline" onClick={() => { setInput(q); }} style={{ borderRadius: 'var(--radius-full)' }}>
                   {q}
                 </button>
               ))}
@@ -414,16 +541,16 @@ export const ChatInterface: React.FC = () => {
         )}
 
         {messages.map((msg) => (
-          <div key={msg.id} className="animate-fade-in" style={{ alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '85%', width: msg.role === 'assistant' ? '100%' : undefined }}>
-            <div className={`message ${msg.role === 'user' ? 'message-user' : 'message-assistant'}`}>
+          <div key={msg.id} className="animate-fade-in message">
+            <div className={msg.role === 'user' ? 'message-user' : 'message-assistant'}>
               {/* Edit button for user messages */}
               {msg.role === 'user' && (
                 <button title="Edit"
                   onClick={() => setInput(msg.content)}
-                  style={{ position: 'absolute', top: '0.5rem', right: '0.5rem', background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer' }}
+                  style={{ float: 'right', background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
                   aria-label="Edit message"
                 >
-                  <Edit2 size={12} />
+                  <Edit2 size={16} />
                 </button>
               )}
 
@@ -431,13 +558,13 @@ export const ChatInterface: React.FC = () => {
               {msg.role === 'assistant' && (
                 <>
                 {msg.verificationStatus === 'verified' && (
-                  <div className="badge-verified" style={{ marginBottom: '0.75rem' }}>
-                    <CheckCircle size={14} /> ✓ Symbolically verified
+                  <div className="badge-verified" style={{ marginBottom: '1rem' }}>
+                    <CheckCircle size={14} /> ✓ Verified
                   </div>
                 )}
                 {msg.verificationStatus === 'unverified' && (
-                  <div className="badge-unverified" style={{ marginBottom: '0.75rem', opacity: 0.8 }}>
-                    <HelpCircle size={14} /> Verification unavailable
+                  <div className="badge-unverified" style={{ marginBottom: '1rem' }}>
+                    <HelpCircle size={14} /> Unverified
                   </div>
                 )}
                 </>
@@ -445,24 +572,24 @@ export const ChatInterface: React.FC = () => {
 
               {/* Image */}
               {msg.imageUrl && (
-                <img src={msg.imageUrl} alt="Uploaded" style={{ maxWidth: '100%', borderRadius: 'var(--radius)', marginBottom: '0.5rem' }} />
+                <img src={msg.imageUrl} alt="Uploaded" style={{ maxWidth: '100%', borderRadius: 'var(--radius-lg)', marginBottom: '1rem', border: '1px solid var(--border)' }} />
               )}
 
               {/* Content */}
               {msg.content && (
                 <div className={msg.role === 'assistant' ? 'handwritten-math' : ''}>
-                  <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                    {msg.content}
+                  <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[[rehypeKatex, { strict: false, throwOnError: false }]]}>
+                    {msg.content.replace(/\\\([\s\S]*?\\\)/g, (match) => '$' + match.slice(2, -2) + '$').replace(/\\\[[\s\S]*?\\\]/g, (match) => '$$$' + match.slice(2, -2) + '$$$')}
                   </ReactMarkdown>
                 </div>
               )}
 
               {/* Action buttons for assistant messages */}
               {msg.role === 'assistant' && !isLoading && msg.content && (
-                <>
-                  <MessageActionButtons content={msg.content} />
+                <div style={{ marginTop: '1.5rem' }}>
                   <SolutionActions problem={lastUserQuery} onAction={sendMessage} />
-                </>
+                  <MessageActionButtons content={msg.content} />
+                </div>
               )}
             </div>
           </div>
@@ -470,33 +597,41 @@ export const ChatInterface: React.FC = () => {
 
         {/* Camera scanner */}
         {isScanning && (
-          <div className="card animate-fade-in" style={{ alignSelf: 'center', width: '100%', maxWidth: '400px' }}>
-            <video ref={videoRef} autoPlay playsInline style={{ width: '100%', borderRadius: 'var(--radius)' }} />
+          <div className="card animate-fade-in" style={{ width: '100%', marginTop: '2rem' }}>
+            <video ref={videoRef} autoPlay playsInline style={{ width: '100%', borderRadius: 'var(--radius-lg)' }} />
             <canvas ref={canvasRef} style={{ display: 'none' }} />
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1rem' }}>
-              <button className="btn btn-danger" onClick={stopCamera}><X size={18} /> {t('common.cancel')}</button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1.5rem' }}>
+              <button className="btn btn-outline" onClick={stopCamera}><X size={18} /> Cancel</button>
               <button className="btn btn-primary" onClick={captureImage}><Camera size={18} /> Capture</button>
             </div>
           </div>
         )}
 
         {/* Loading indicator */}
-        {isLoading && <LoadingIndicator />}
+        {isLoading && (
+           <div className="message animate-fade-in">
+             <div className="message-assistant">
+                <LoadingIndicator />
+             </div>
+           </div>
+        )}
 
-        <div ref={messagesEndRef} />
+        <div ref={messagesEndRef} style={{ paddingBottom: '2rem' }} />
       </div>
 
       {/* Input area */}
-      <form id="solve-form" onSubmit={handleSubmit} style={{ display: 'flex', gap: '0.5rem', paddingTop: 'var(--space-sm)', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
+      <form id="solve-form" onSubmit={handleSubmit} style={{ position: 'relative', marginTop: 'auto', paddingTop: 'var(--space-md)' }}>
         <input type="file" accept="image/*" style={{ display: 'none' }} ref={fileInputRef} onChange={handleImageUpload} />
         <input type="file" accept=".pdf,application/pdf" style={{ display: 'none' }} ref={pdfInputRef} onChange={handlePdfUpload} />
 
-        <div style={{ position: 'relative' }}>
-          <button type="button" className="btn btn-outline" title="Add Attachment" onClick={() => setShowAttachments(!showAttachments)} disabled={isLoading || isScanning} aria-label="Add attachment">
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)', padding: '4px', paddingLeft: '12px' }}>
+          
+          <button type="button" className="icon-btn" title="Add Attachment" onClick={() => setShowAttachments(!showAttachments)} disabled={isLoading || isScanning} aria-label="Add attachment" style={{ marginRight: '8px' }}>
             <Plus size={20} />
           </button>
+          
           {showAttachments && (
-            <div className="card animate-fade-in" style={{ position: 'absolute', bottom: '100%', left: 0, marginBottom: '0.5rem', display: 'flex', flexDirection: 'column', gap: '2px', padding: '0.5rem', minWidth: '180px', zIndex: 10 }}>
+            <div className="card animate-fade-in" style={{ position: 'absolute', bottom: '100%', left: 0, marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '4px', padding: '0.5rem', minWidth: '200px', zIndex: 10 }}>
               <button type="button" className="nav-link" onClick={() => { startCamera(); setShowAttachments(false); }}>
                 <Camera size={16} /> {t('solve.attachments.scanMath')}
               </button>
@@ -508,20 +643,21 @@ export const ChatInterface: React.FC = () => {
               </button>
             </div>
           )}
-        </div>
 
-        <input
-          type="text"
-          className="input"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder={t('solve.placeholder')}
-          disabled={isLoading}
-          aria-label={t('solve.placeholder')}
-        />
-        <button type="submit" className="btn btn-primary" disabled={isLoading || !input.trim()} aria-label={t('solve.send')}>
-          <Send size={20} />
-        </button>
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder={messages.length === 0 ? "Enter a math problem..." : "Ask a follow-up question..."}
+            disabled={isLoading}
+            aria-label={t('solve.placeholder')}
+            style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', fontSize: '1rem', color: 'var(--text-primary)', padding: '12px 0' }}
+          />
+          
+          <button type="submit" className="btn btn-primary" disabled={isLoading || !input.trim()} aria-label={t('solve.send')} style={{ borderRadius: 'var(--radius-lg)', padding: '10px 16px', marginLeft: '8px' }}>
+            <Send size={18} />
+          </button>
+        </div>
       </form>
     </div>
   );

@@ -1,0 +1,38 @@
+# Core LangChain
+langchain>=0.2.0,<0.3.0
+langchain-community>=0.2.0,<0.3.0
+langchain-core>=0.2.0,<0.3.0
+langchain-text-splitters>=0.2.0,<0.3.0
+langchain-groq>=0.1.0
+langchain-google-genai>=1.0.6
+google-generativeai>=0.5.4
+langgraph>=0.0.26
+langsmith>=0.1.0
+
+# Vector DB (skip heavy fastembed/qdrant for local)
+
+# Database (Firebase)
+firebase-admin>=6.5.0
+
+# Math
+sympy>=1.12
+numpy>=1.24.0
+scipy>=1.11.0
+
+# API Framework
+fastapi>=0.111.0
+uvicorn>=0.29.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+
+# Utilities
+python-dotenv>=1.0.0
+requests>=2.31.0
+pillow>=10.0.0
+groq
+
+# Rate limiting
+slowapi>=0.1.9
+
+# Logging
+google-cloud-logging>=3.10.0

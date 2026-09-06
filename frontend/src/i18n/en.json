@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "AI Math Tutor",
+    "name": "AI_MATH_TUTOR",
     "tagline": "Solve. Verify. Understand. Practice.",
     "description": "Your AI-powered math tutor that solves and verifies problems, teaches the reasoning, checks your work, and turns mistakes into practice."
   },
@@ -51,6 +51,7 @@
       "why": "Why?",
       "anotherMethod": "Another Method",
       "checkMyWork": "Check My Work",
+      "checkAgain": "Check Again",
       "hint": "Give me a hint",
       "teachMe": "Teach me (don't solve)",
       "similarProblem": "Similar Problem",

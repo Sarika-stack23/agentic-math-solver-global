@@ -34,6 +34,7 @@ export const GlobalPracticePanel: React.FC = () => {
     showStuckMenu: false
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingCurriculum, setIsLoadingCurriculum] = useState(true);
   const [copied, setCopied] = useState(false);
   const [fetchFailed, setFetchFailed] = useState(false);
 
@@ -44,16 +45,122 @@ export const GlobalPracticePanel: React.FC = () => {
   const [topicProblems, setTopicProblems] = useState<any[]>([]);
   const [topicProblemIndex, setTopicProblemIndex] = useState(0);
 
+  const getCleanText = (content: string) => {
+    let text = content;
+
+    // 1. Strip markdown bold/italic/headers
+    text = text.replace(/\*\*(.*?)\*\*/g, '$1');
+    text = text.replace(/\*(.*?)\*/g, '$1');
+    text = text.replace(/#+\s?(.*?)\n/g, '$1\n');
+
+    // 2. Strip \( \) and \[ \] math delimiters FIRST (keep inner content)
+    text = text.replace(/\\\([\s\S]*?\\\)/g, (m) => m.slice(2, -2));
+    text = text.replace(/\\\[[\s\S]*?\\\]/g, (m) => m.slice(2, -2));
+
+    // 3. Strip $$ ... $$ and $ ... $ (keep inner content)
+    text = text.replace(/\$\$([\s\S]*?)\$\$/g, '$1');
+    text = text.replace(/\$([^$\n]+)\$/g, '$1');
+
+    // 4. Convert known LaTeX commands to readable text/unicode
+    text = text.replace(/\\frac\{([^{}]+)\}\{([^{}]+)\}/g, '($1)/($2)');
+    text = text.replace(/\\sqrt\{([^{}]+)\}/g, '√($1)');
+    text = text.replace(/\\boxed\{([^{}]+)\}/g, '[ $1 ]');
+    text = text.replace(/\\text\{([^{}]+)\}/g, '$1');
+    text = text.replace(/\\pi/g, 'π');
+    text = text.replace(/\\infty/g, '∞');
+    text = text.replace(/\\pm/g, '±');
+    text = text.replace(/\\mp/g, '∓');
+    text = text.replace(/\\cdot/g, '·');
+    text = text.replace(/\\times/g, '×');
+    text = text.replace(/\\div/g, '÷');
+    text = text.replace(/\\leq/g, '≤');
+    text = text.replace(/\\geq/g, '≥');
+    text = text.replace(/\\neq/g, '≠');
+    text = text.replace(/\\approx/g, '≈');
+    text = text.replace(/\\Rightarrow/g, ' ⟹ ');
+    text = text.replace(/\\rightarrow/g, ' → ');
+    text = text.replace(/\\Leftarrow/g, ' ⟸ ');
+    text = text.replace(/\\leftarrow/g, ' ← ');
+    text = text.replace(/\\sin/g, 'sin');
+    text = text.replace(/\\cos/g, 'cos');
+    text = text.replace(/\\tan/g, 'tan');
+    text = text.replace(/\\cot/g, 'cot');
+    text = text.replace(/\\sec/g, 'sec');
+    text = text.replace(/\\csc/g, 'csc');
+    text = text.replace(/\\ln/g, 'ln');
+    text = text.replace(/\\log/g, 'log');
+    text = text.replace(/\\exp/g, 'exp');
+    text = text.replace(/\\alpha/g, 'α');
+    text = text.replace(/\\beta/g, 'β');
+    text = text.replace(/\\gamma/g, 'γ');
+    text = text.replace(/\\delta/g, 'δ');
+    text = text.replace(/\\theta/g, 'θ');
+    text = text.replace(/\\lambda/g, 'λ');
+    text = text.replace(/\\mu/g, 'μ');
+    text = text.replace(/\\sigma/g, 'σ');
+    text = text.replace(/\\omega/g, 'ω');
+    text = text.replace(/\\varepsilon/g, 'ε');
+    text = text.replace(/\\left\(/g, '(');
+    text = text.replace(/\\right\)/g, ')');
+    text = text.replace(/\\left\[/g, '[');
+    text = text.replace(/\\right\]/g, ']');
+    text = text.replace(/\\left\|/g, '|');
+    text = text.replace(/\\right\|/g, '|');
+    text = text.replace(/\^\{([^{}]+)\}/g, '^($1)');
+    text = text.replace(/_\{([^{}]+)\}/g, '_($1)');
+    text = text.replace(/\\,/g, ' ');
+    text = text.replace(/\\ /g, ' ');
+    text = text.replace(/\\quad/g, '  ');
+    text = text.replace(/\\qquad/g, '    ');
+
+    // 5. Remove any remaining raw LaTeX commands and bare braces
+    text = text.replace(/\\[a-zA-Z]+/g, '');
+    text = text.replace(/[{}]/g, '');
+
+    // 6. Clean up excessive newlines
+    text = text.replace(/\n{3,}/g, '\n\n');
+    return text.trim();
+  };
+
+
   const handleCopy = () => {
-    navigator.clipboard.writeText(state.feedback);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    const textToCopy = getCleanText(state.feedback);
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }).catch(err => console.error("Clipboard copy failed", err));
+    } else {
+      const textArea = document.createElement("textarea");
+      textArea.value = textToCopy;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-999999px";
+      textArea.style.top = "-999999px";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (err) {
+        console.error('Fallback copy failed', err);
+      }
+      textArea.remove();
+    }
   };
 
   useEffect(() => {
+    setIsLoadingCurriculum(true);
     fetch(`${apiUrl}/api/v1/quiz/structure`)
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error('Failed to fetch curriculum structure');
+        return r.json();
+      })
       .then(data => {
+        if (!data || data.detail) {
+          throw new Error('Invalid curriculum data');
+        }
         setState(prev => {
           const classes = Object.keys(data).sort();
           const firstClass = classes[0] || '';
@@ -65,12 +172,14 @@ export const GlobalPracticePanel: React.FC = () => {
           return { ...prev, quizTree: data, selectedClass: firstClass, selectedChapter: firstChap, selectedExercise: firstEx, selectedQuestionIndex: 0, currentQuestionRaw: qs.length > 0 ? qs[0] : '' };
         });
       })
-      .catch(() => setFetchFailed(true));
+      .catch(() => setFetchFailed(true))
+      .finally(() => setIsLoadingCurriculum(false));
   }, [apiUrl]);
 
   const generateTopicPractice = async () => {
     if (!user) return;
     setIsLoading(true);
+    setFetchFailed(false);
     try {
       const token = await user.getIdToken();
       const response = await fetch(`${apiUrl}/api/v1/practice/generate`, {
@@ -82,9 +191,14 @@ export const GlobalPracticePanel: React.FC = () => {
         const data = await response.json();
         setTopicProblems(data.problems || []);
         setTopicProblemIndex(0);
-        setState(prev => ({ ...prev, feedback: '' }));
+        setState(prev => ({ ...prev, feedback: '', currentQuestionRaw: '' }));
+      } else {
+        throw new Error(`HTTP ${response.status}`);
       }
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+      setFetchFailed(true);
+    }
     finally { setIsLoading(false); }
   };
 
@@ -100,16 +214,10 @@ export const GlobalPracticePanel: React.FC = () => {
       try { await fetch(`${apiUrl}/api/v1/progress/increment`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } }); } catch {}
     };
 
-    // Direct answer lookup
+    // Map 'Show me the full answer for this' to the AI solving it step-by-step
     if (action.includes('Show me the full answer') || action.includes('Show me the full step-by-step answer')) {
-      const parts = state.currentQuestionRaw.split(/Answer:/i);
       incrementProgress();
-      if (parts.length > 1) {
-        setState(prev => ({ ...prev, feedback: "**Answer:** " + parts[1].trim(), showStuckMenu: false }));
-        setIsLoading(false);
-        return;
-      }
-      action = 'Solve this problem and show the final answer';
+      action = 'Solve this problem step-by-step and show the final answer';
     }
 
     if (action.toLowerCase().includes('hint') || action.toLowerCase().includes('step') || action.includes("I don't understand") || action.includes('explain the underlying concept') || action.includes('break down the formula')) {
@@ -136,7 +244,17 @@ export const GlobalPracticePanel: React.FC = () => {
       const response = await fetch(`${apiUrl}/api/v1/chat/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ query: `Action: ${action}\nQuestion: ${questionText}`, session_id: 'quiz-' + Date.now() })
+        body: JSON.stringify({
+          query: `${action}\nQuestion: ${questionText}`,
+          session_id: 'quiz-' + Date.now(),
+          action: action.toLowerCase().includes('hint') ? 'hint'
+            : action.toLowerCase().includes('step') ? 'steps'
+            : action.toLowerCase().includes('concept') || action.toLowerCase().includes('teach') || action.toLowerCase().includes('understand') ? 'teach'
+            : action.toLowerCase().includes('full answer') ? 'answer'
+            : action.toLowerCase().includes('solve') ? 'solve'
+            : action.toLowerCase().includes('similar') || action.toLowerCase().includes('example') ? 'similar'
+            : 'ask_ai'
+        })
       });
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -238,10 +356,15 @@ export const GlobalPracticePanel: React.FC = () => {
               ))}
             </select>
             <button className="btn btn-primary" onClick={generateTopicPractice} disabled={isLoading}>
-              {t('practice.generateSet')}
+              {isLoading ? 'Generating...' : t('practice.generateSet')}
             </button>
           </div>
-          {topicProblems.length > 0 && (
+          {fetchFailed && (
+            <div style={{ marginTop: 'var(--space-md)', color: 'var(--warning)', fontSize: 'var(--text-sm)' }}>
+              Failed to generate practice questions. Please try again.
+            </div>
+          )}
+          {topicProblems.length > 0 && !isLoading && (
             <div style={{ display: 'flex', gap: '0.5rem', marginTop: 'var(--space-md)', flexWrap: 'wrap' }}>
               {topicProblems.map((_, idx) => (
                 <button key={idx} className={`btn ${idx === topicProblemIndex ? 'btn-primary' : 'btn-outline'}`} style={{ minWidth: '40px' }}
@@ -257,17 +380,33 @@ export const GlobalPracticePanel: React.FC = () => {
 
       {/* Curriculum Selectors */}
       {mode === 'curriculum' && (
-        fetchFailed || Object.keys(state.quizTree).length === 0 ? (
+        fetchFailed ? (
+          <div className="card" style={{ marginBottom: 'var(--space-lg)', textAlign: 'center', padding: 'var(--space-2xl)' }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: 'var(--space-md)', opacity: 0.3 }}>⚠️</div>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--space-md)', fontSize: 'var(--text-base)' }}>
+              Unable to load curriculum.
+            </p>
+            <button className="btn btn-outline" onClick={() => {
+              setFetchFailed(false);
+              // Trigger a re-render to run the useEffect fetch again by remounting or re-fetching
+              window.location.reload();
+            }}>
+              <RefreshCw size={14} style={{ marginRight: '6px' }} /> Retry
+            </button>
+          </div>
+        ) : isLoadingCurriculum ? (
           <div className="card" style={{ marginBottom: 'var(--space-lg)', textAlign: 'center', padding: 'var(--space-2xl)' }}>
             <div style={{ fontSize: '2.5rem', marginBottom: 'var(--space-md)', opacity: 0.3 }}>📚</div>
             <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--space-md)', fontSize: 'var(--text-base)' }}>
-              {fetchFailed ? 'Start the backend server to load the question bank.' : 'Loading Global Curriculum question bank...'}
+              Loading Global Curriculum question bank...
             </p>
-            {fetchFailed && (
-              <code style={{ background: 'var(--accent-subtle)', padding: '8px 16px', borderRadius: 'var(--radius-sm)', fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
-                uvicorn backend.src.main:app --port 8080
-              </code>
-            )}
+          </div>
+        ) : Object.keys(state.quizTree).length === 0 ? (
+          <div className="card" style={{ marginBottom: 'var(--space-lg)', textAlign: 'center', padding: 'var(--space-2xl)' }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: 'var(--space-md)', opacity: 0.3 }}>📚</div>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--space-md)', fontSize: 'var(--text-base)' }}>
+              No curriculum questions available.
+            </p>
           </div>
         ) : (
           <div className="card" style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: 'var(--space-lg)' }}>
@@ -291,15 +430,15 @@ export const GlobalPracticePanel: React.FC = () => {
       )}
 
       {/* Question Display */}
-      {!(mode === 'curriculum' && (fetchFailed || Object.keys(state.quizTree).length === 0)) && (
-        <div className="card" style={{ marginBottom: 'var(--space-lg)', minHeight: '160px', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-          <div style={{ fontSize: '1.2rem', lineHeight: '1.7', width: '100%' }}>
+      {!(mode === 'curriculum' && (fetchFailed || isLoadingCurriculum || Object.keys(state.quizTree).length === 0)) && !(mode === 'topic' && isLoading && topicProblems.length === 0) && (
+        <div className="card" style={{ marginBottom: 'var(--space-lg)', minHeight: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-sm)' }}>
+          <div style={{ fontSize: '1.25rem', lineHeight: '1.8', width: '100%', fontFamily: 'var(--font-serif)', color: 'var(--text-primary)', padding: 'var(--space-lg)' }}>
             {displayQuestion ? (
-              <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{displayQuestion}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[[rehypeKatex, { strict: false, throwOnError: false }]]}>{displayQuestion}</ReactMarkdown>
             ) : (
               <div style={{ color: 'var(--text-muted)' }}>
-                <div style={{ fontSize: '2rem', marginBottom: '0.5rem', opacity: 0.3 }}>{mode === 'topic' ? '✨' : '📖'}</div>
-                <p>{mode === 'topic' ? 'Select a topic and click Generate to get started.' : 'Select a question from the dropdowns above.'}</p>
+                <div style={{ fontSize: '2.5rem', marginBottom: '1rem', opacity: 0.3 }}>{mode === 'topic' ? '✨' : '📖'}</div>
+                <p style={{ fontFamily: 'var(--font-sans)', fontSize: '1rem' }}>{mode === 'topic' ? 'Select a topic and click Generate to get started.' : 'Select a question from the dropdowns above.'}</p>
               </div>
             )}
           </div>
@@ -345,7 +484,9 @@ export const GlobalPracticePanel: React.FC = () => {
             </button>
           </div>
           <div className="handwritten-math">
-            <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{state.feedback}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[[rehypeKatex, { strict: false, throwOnError: false }]]}>
+              {state.feedback.replace(/\\\([\s\S]*?\\\)/g, (match) => '$' + match.slice(2, -2) + '$').replace(/\\\[[\s\S]*?\\\]/g, (match) => '$$$' + match.slice(2, -2) + '$$$')}
+            </ReactMarkdown>
           </div>
 
           {!isLoading && (

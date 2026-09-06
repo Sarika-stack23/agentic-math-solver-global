@@ -3,6 +3,7 @@
 *.env
 .env.local
 .env.example.save
+backend/firebase-adminsdk.json
 
 # ── Python ─────────────────────────────────────────────────
 __pycache__/

@@ -57,6 +57,14 @@ class ChatRequest(BaseModel):
         default=None,
         description="Student education level (e.g., 'high_school', 'university', 'competitive')",
     )
+    action: Optional[str] = Field(
+        default=None,
+        description="Optional action type (e.g., 'hint', 'teach', 'check', 'similar', 'another')",
+    )
+    student_work: Optional[str] = Field(
+        default=None,
+        description="Optional student work provided for checking",
+    )
 
 
 class ChatResponse(BaseModel):
@@ -124,7 +132,7 @@ async def chat(
             store = build_pipeline()
             engine = MathAIEngine(vector_store=store, session_id=payload.session_id)
             engine.memory.uid = uid
-            result = engine.query(payload.query)
+            result = engine.query(payload.query, action=payload.action)
             return ChatResponse(**result)
     except Exception as e:
         logger.error(f"Chat endpoint error: {e}")
@@ -165,11 +173,11 @@ async def chat_stream(
 
         async def generate():
             if persistence_error:
-                yield f"data: {json.dumps({'content': '⚠️ Chat history is temporarily unavailable. Your session is not being saved.', 'type': 'system'})}\n\n"
+                pass  # Do not corrupt the mathematical stream with an error string
             
             full_response = ""
             try:
-                async for chunk in engine.astream(payload.query, context, chat_history):
+                async for chunk in engine.astream(payload.query, context, chat_history, action=payload.action):
                     if chunk:
                         full_response += chunk
                         yield f"data: {json.dumps({'content': chunk, 'type': 'token'})}\n\n"
@@ -213,7 +221,7 @@ async def extract_math_from_image(
     try:
         image_bytes = await validate_upload(file, allow_pdf=False)
 
-        if settings.use_gemini:
+        if getattr(settings, "gemini_api_key", ""):
             vision_service = GeminiVisionService()
         else:
             from backend.src.services.gemini_service import GroqVisionService
@@ -235,6 +243,22 @@ async def extract_math_from_image(
 
     except Exception as e:
         logger.error(f"Vision endpoint error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="An internal server error occurred. Please try again.",
+        )
+
+
+@router.get("/history/sessions")
+async def get_sessions(uid: str = Depends(verify_firebase_token)):
+    """Get all session IDs for the user."""
+    try:
+        engine = MathAIEngine(session_id="dummy")
+        engine.memory.uid = uid
+        sessions = engine.memory.get_sessions()
+        return {"sessions": sessions}
+    except Exception as e:
+        logger.error(f"Sessions endpoint error: {e}")
         raise HTTPException(
             status_code=500,
             detail="An internal server error occurred. Please try again.",

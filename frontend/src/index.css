@@ -203,6 +203,7 @@ a:hover { opacity: 0.85; }
 /* ── Layout ─────────────────────────────────────────────────────────── */
 .app-container {
   display: flex;
+  flex-direction: column;
   height: 100vh;
   overflow: hidden;
 }
@@ -214,6 +215,122 @@ a:hover { opacity: 0.85; }
   flex-direction: column;
   min-width: 0;
   background: var(--gradient-mesh), var(--bg-primary);
+}
+
+/* ── Top Navigation ────────────────────────────────────────────────── */
+.top-nav {
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.top-nav-container {
+  max-width: 1440px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.5rem;
+}
+
+.top-nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.top-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.nav-link-top {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-size: var(--text-sm);
+  transition: all var(--transition-base);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+}
+
+.nav-link-top:hover {
+  color: var(--text-primary);
+  background: var(--accent-subtle);
+}
+
+.nav-link-top.active {
+  color: var(--accent);
+  font-weight: 600;
+  position: relative;
+}
+
+.nav-link-top.active::after {
+  content: '';
+  position: absolute;
+  bottom: -0.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 1px;
+}
+
+.top-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius);
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  text-decoration: none;
+}
+
+.icon-btn:hover {
+  background: var(--accent-subtle);
+  color: var(--text-primary);
+}
+
+/* ── Visibility Utilities ──────────────────────────────────────────── */
+.desktop-only {
+  display: flex;
+}
+
+.mobile-only {
+  display: none;
+}
+
+.mobile-menu {
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem 1rem 1rem;
+  border-top: 1px solid var(--border);
+  background: var(--bg-secondary);
+  gap: 2px;
 }
 
 /* ── Sidebar ────────────────────────────────────────────────────────── */
@@ -1036,26 +1153,16 @@ textarea.input {
 
 /* ── Responsive Design ──────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  .sidebar {
-    position: fixed;
-    left: -100%;
-    top: 0;
-    bottom: 0;
-    z-index: 50;
-    transition: left var(--transition-slow);
-    box-shadow: var(--shadow-lg);
+  .desktop-only {
+    display: none !important;
   }
 
-  .sidebar.open {
-    left: 0;
+  .mobile-only {
+    display: flex !important;
   }
 
-  .mobile-header {
-    display: flex;
-  }
-
-  .mobile-menu-overlay {
-    z-index: 40;
+  .top-nav-container {
+    padding: 0.5rem 1rem;
   }
 
   .page-container {
@@ -1094,6 +1201,10 @@ textarea.input {
 
   .math-float {
     display: none;
+  }
+
+  .content-wrapper {
+    padding: var(--space-md);
   }
 }
 
@@ -1176,4 +1287,22 @@ textarea.input {
   border-radius: 50%;
   background: var(--success);
   animation: pulseGlow 2s ease-in-out infinite;
+}
+/* ── Layout Overrides ─────────────────────────────────────────────────────── */
+.content-wrapper {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: var(--space-xl) var(--space-lg);
+  width: 100%;
+}
+
+.page-container {
+  max-width: 960px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Fix for KaTeX fraction and root lines becoming vertical artifacts due to global border-box reset */
+.katex *, .katex *::before, .katex *::after {
+  box-sizing: content-box !important;
 }

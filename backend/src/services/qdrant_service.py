@@ -34,7 +34,16 @@ class QdrantService:
         else:
             import os
             os.makedirs(self.url, exist_ok=True)
-            self.client = QdrantClient(path=self.url)
+            try:
+                self.client = QdrantClient(path=self.url)
+            except Exception as e:
+                err_str = str(e).lower()
+                if "already accessed" in err_str or "temporarily unavailable" in err_str or "locked" in err_str:
+                    logger.warning(f"Qdrant file lock at {self.url} is held by another process. Falling back to in-memory mode to prevent crash.")
+                    self.client = QdrantClient(location=":memory:")
+                    self.url = ":memory:" # Update URL so we know it's memory mode
+                else:
+                    raise e
 
         # 2. Get dense embeddings
         self.dense_embeddings = get_dense_embeddings()

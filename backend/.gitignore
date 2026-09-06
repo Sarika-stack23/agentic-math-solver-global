@@ -1,1 +1,48 @@
+# ── Secrets & Credentials — NEVER commit these ──────────────────────
+.env
+.env.local
+.env.production
+.env.development
+*.env
+firebase-adminsdk.json
 serviceAccountKey.json
+*-adminsdk*.json
+*serviceaccount*.json
+google-credentials.json
+credentials.json
+
+# ── Python ───────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# ── Virtual Environments ─────────────────────────────────────────────
+venv/
+.venv/
+env/
+ENV/
+
+# ── Testing & Coverage ───────────────────────────────────────────────
+.pytest_cache/
+htmlcov/
+.coverage
+*.egg-info/
+
+# ── Build Artifacts ──────────────────────────────────────────────────
+dist/
+build/
+*.egg-info/
+
+# ── Logs ─────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── Temp files from app ──────────────────────────────────────────────
+temp_*.pdf
+temp_*.png
+tmp_*.pdf
+
+# ── macOS ────────────────────────────────────────────────────────────
+.DS_Store

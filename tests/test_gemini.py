@@ -37,26 +37,7 @@ class TestGeminiService(unittest.TestCase):
         self.assertEqual(response, "This is a test response.")
         mock_client.models.generate_content.assert_called_once()
 
-    @patch("backend.src.services.gemini_service._get_gemini_client")
-    def test_query_fallback(self, mock_get_client):
-        """Test fallback when the primary model fails after retries (e.g. rate limit)."""
-        mock_client = MagicMock()
-        mock_get_client.return_value = mock_client
 
-        def side_effect(*args, **kwargs):
-            if kwargs.get('model') == settings.gemini_primary_model:
-                raise Exception("429 Resource Exhausted")
-            mock_resp = MagicMock()
-            mock_resp.text = "Fallback response"
-            return mock_resp
-
-        mock_client.models.generate_content.side_effect = side_effect
-
-        service = GeminiService()
-        response = service.query("test question")
-
-        self.assertIn("Fallback response", response)
-        self.assertIn(settings.gemini_fallback_model, response)
 
     @patch("backend.src.services.gemini_service.time.sleep")
     @patch("backend.src.services.gemini_service._get_gemini_client")

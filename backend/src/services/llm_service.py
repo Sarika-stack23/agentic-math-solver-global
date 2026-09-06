@@ -28,6 +28,166 @@ logger = logging.getLogger("math_assistant.llm")
 _LLM_CACHE = {}
 _LLM_CACHE_LOCK = threading.Lock()
 
+ACTION_PROMPTS = {
+    "solve": (
+        "\n\n════════════════════════════════════════"
+        "\n🚨 ACTION OVERRIDE — SOLVE (COMPLETE TEACHER EXPLANATION)"
+        "\n════════════════════════════════════════"
+        "\nThe student wants you to teach them how to solve this problem completely."
+        "\nProvide:"
+        "\n1. What is being asked"
+        "\n2. Relevant formula or concept"
+        "\n3. Step-by-step reasoning with calculations"
+        "\n4. Final answer"
+        "\nUse clean mathematical structure with LaTeX."
+        "\nDo NOT add conversational filler, greetings, or sign-offs."
+        "\nDo NOT say 'Here is...', 'Let me...', 'Good luck!', 'Happy calculating!'."
+    ),
+    "hint": (
+        "\n\n════════════════════════════════════════"
+        "\n🚨 ACTION OVERRIDE — HINT ONLY"
+        "\n════════════════════════════════════════"
+        "\nThe student clicked HINT. They want a small clue to continue on their own."
+        "\n"
+        "\nYou MUST give ONLY a hint — a nudge, a direction, a relevant formula, or a guiding question."
+        "\n"
+        "\nA hint is 1–3 sentences maximum."
+        "\n"
+        "\nYou MUST NOT:"
+        "\n- Solve the problem"
+        "\n- Show complete derivations"
+        "\n- Show full step-by-step calculations"
+        "\n- Write 'Step 1:', 'Step 2:', etc."
+        "\n- Write 'Final Answer:' or give the final numerical answer"
+        "\n- Perform the actual calculations"
+        "\n- Write more than 3 sentences"
+        "\n"
+        "\nGood hint examples:"
+        "\n- 'Start by identifying a, b, and c from the standard quadratic form.'"
+        "\n- 'The volume of a tetrahedron can be found using the scalar triple product.'"
+        "\n- 'Which formula relates the edges of a tetrahedron to its volume?'"
+        "\n"
+        "\nAfter giving the hint, STOP. Do not continue."
+    ),
+    "steps": (
+        "\n\n════════════════════════════════════════"
+        "\n🚨 ACTION OVERRIDE — STEPS (SHORT ROADMAP ONLY)"
+        "\n════════════════════════════════════════"
+        "\nThe student clicked STEPS. They want a short roadmap of what to do, NOT a full solution."
+        "\n"
+        "\nProvide a numbered list of steps, each step being ONE short line."
+        "\nA formula may appear when it helps identify what to do."
+        "\n"
+        "\nFormat:"
+        "\nStep 1: [one short line]"
+        "\nStep 2: [one short line]"
+        "\nStep 3: [one short line]"
+        "\nStep 4: [one short line]"
+        "\n"
+        "\nYou MUST NOT:"
+        "\n- Perform every calculation"
+        "\n- Show the complete worked-out solution"
+        "\n- Give the final numerical answer"
+        "\n- Write 'Final Answer:'"
+        "\n- Write long paragraphs for each step"
+        "\n- Turn this into a complete solution"
+        "\n"
+        "\nThe student should still have work left to do after reading the steps."
+        "\nKeep it to 4–6 short steps. STOP after listing the steps."
+    ),
+    "answer": (
+        "\n\n════════════════════════════════════════"
+        "\n🚨 ACTION OVERRIDE — ANSWER (FINAL ANSWER ONLY)"
+        "\n════════════════════════════════════════"
+        "\nThe student clicked ANSWER. They want the direct final answer."
+        "\nReturn ONLY the direct final answer."
+        "\nIf a brief calculation is needed for clarity, keep it very short (1-2 lines)."
+        "\nDo NOT reproduce the entire derivation."
+        "\nDo NOT write 'Step 1:', 'Step 2:', etc."
+        "\nDo NOT add conversational filler."
+        "\nEnd with the final boxed answer."
+    ),
+    "teach": (
+        "\n\n════════════════════════════════════════"
+        "\n🚨 ACTION OVERRIDE — TEACH ME (CONCEPT EXPLANATION)"
+        "\n════════════════════════════════════════"
+        "\nThe student clicked TEACH ME. They want to understand the underlying mathematics."
+        "\n"
+        "\nYou MUST format your response EXACTLY with these three headings:"
+        "\n### Concept"
+        "\nExplain the concept and its intuition, and why the method works."
+        "\n### Formula"
+        "\nState the relevant formula(s) and what each variable means."
+        "\n### Example"
+        "\nProvide a small illustrative example."
+        "\n"
+        "\nCRITICAL CONSTRAINTS:"
+        "\n1. Do NOT solve the user's exact problem completely."
+        "\n2. Do NOT use 'Step 1', 'Step 2', etc."
+        "\n3. Do NOT add conversational filler."
+        "\n4. Make it feel like a teacher explaining at a whiteboard."
+    ),
+    "check": (
+        "\n\n════════════════════════════════════════"
+        "\n🚨 ACTION OVERRIDE — CHECK MY WORK"
+        "\n════════════════════════════════════════"
+        "\nThe student clicked CHECK MY WORK."
+        "\nThey are asking: 'Is my work correct?'"
+        "\n"
+        "\nInspect their work carefully."
+        "\n"
+        "\nIf correct: confirm each step is correct and explain why."
+        "\nIf incorrect: identify the first mistake, explain what went wrong, and show the corrected step."
+        "\n"
+        "\nDo NOT automatically provide the entire solution from scratch."
+        "\nOnly give the complete solution if the student's work is missing entirely."
+        "\nDo NOT add conversational filler."
+    ),
+    "another": (
+        "\n\n════════════════════════════════════════"
+        "\n🚨 ACTION OVERRIDE — ANOTHER METHOD"
+        "\n════════════════════════════════════════"
+        "\nThe student clicked ANOTHER METHOD."
+        "\nProvide a genuinely DIFFERENT mathematical method to solve this problem."
+        "\nDo NOT simply rewrite the same solution with different wording."
+        "\nExplain why the alternative method works."
+        "\nDo NOT add conversational filler."
+    ),
+    "similar": (
+        "\n\n════════════════════════════════════════"
+        "\n🚨 ACTION OVERRIDE — SIMILAR PROBLEM"
+        "\n════════════════════════════════════════"
+        "\nThe student clicked SIMILAR PROBLEM."
+        "\nGenerate a NEW problem that tests the same mathematical concept."
+        "\nDo NOT solve the new problem."
+        "\nDo NOT repeat the original question."
+        "\nJust state the new problem clearly, then say 'Your turn.'"
+        "\nSTOP after stating the problem."
+    ),
+    "practice": (
+        "\n\n════════════════════════════════════════"
+        "\n🚨 ACTION OVERRIDE — PRACTICE"
+        "\n════════════════════════════════════════"
+        "\nThe student clicked PRACTICE."
+        "\nGenerate a NEW practice question testing the same concept."
+        "\nDo NOT provide the answer."
+        "\nDo NOT solve the problem."
+        "\nLet the student attempt it first."
+        "\nJust state the problem, then STOP."
+    ),
+    "ask_ai": (
+        "\n\n════════════════════════════════════════"
+        "\n🚨 ACTION OVERRIDE — ASK AI (OPEN CONVERSATION)"
+        "\n════════════════════════════════════════"
+        "\nThe student clicked ASK AI."
+        "\nAnswer the student's specific question directly."
+        "\nUse the current problem as context."
+        "\nDo NOT automatically produce the entire solution unless the student asks for it."
+        "\nDo NOT add conversational filler."
+    ),
+}
+
+
 
 class GroqLLMWrapper:
     """Wrapper around native Groq client."""
@@ -128,11 +288,15 @@ def _get_llm(model=None):
 class MathAIEngine:
     """Orchestrates RAG retrieval, symbolic math, and LLM calls for math tutoring."""
 
+    # Class-level action prompts — accessible as self.ACTION_PROMPTS or MathAIEngine.ACTION_PROMPTS
+    ACTION_PROMPTS = ACTION_PROMPTS
+
     def __init__(self, vector_store=None, session_id: str = "default"):
         self.vector_store = vector_store
         self.memory = MongoDBChatMemory(session_id=session_id)
         self.symbolic = SymbolicMathEngine()
         self.session_id = session_id
+
 
     def _retrieve_context(self, query: str) -> Tuple[list, str]:
         """Retrieve relevant documents from the vector store."""
@@ -189,11 +353,25 @@ class MathAIEngine:
         context: str,
         chat_history: list,
         system_prompt: str = None,
+        action: str = None,
     ) -> list:
+        from backend.src.services.prompt_service import PromptService
+        prompt_service = PromptService()
+
         if system_prompt is None:
-            system_prompt = SYSTEM_TEMPLATE.replace("{context}", context)
+            base_prompt = prompt_service.get_system_prompt()
+            system_prompt = base_prompt.replace("{context}", context)
+            if action and action in self.ACTION_PROMPTS:
+                action_prompt = self.ACTION_PROMPTS[action]
+                system_prompt += "\n" + action_prompt
         else:
+            # If a custom prompt is provided, we assume it's fully formatted
             system_prompt = system_prompt.replace("{context}", context)
+
+        import logging
+        logger = logging.getLogger("math_assistant.llm")
+        logger.info(f"FINAL SYSTEM PROMPT FOR ACTION {action}: {system_prompt}")
+
         llm_messages = [SystemMessage(content=system_prompt)]
         for msg in chat_history:
             llm_messages.append(msg)
@@ -206,23 +384,16 @@ class MathAIEngine:
         context: str = "",
         chat_history: list = None,
         system_prompt: str = None,
+        action: str = None,
     ) -> str:
         """Centralized generation using Groq Primary -> Groq Fallback -> Gemini."""
         if chat_history is None:
             chat_history = []
 
         llm_messages = self._build_messages(
-            user_input, context, chat_history, system_prompt
+            user_input, context, chat_history, system_prompt, action
         )
-        if settings.use_gemini:
-            try:
-                gemini = GeminiService()
-                answer = gemini.query(user_input, context=context, chat_history=chat_history)
-                if answer:
-                    return answer
-            except Exception as e:
-                logger.error(f"Gemini primary failed: {e}")
-                last_error = e
+        # Gemini is no longer primary. Fallbacks are configured at the end of this method.
 
         models_to_try = [settings.groq_primary_model] + settings.groq_model_fallbacks
 
@@ -264,23 +435,13 @@ class MathAIEngine:
                     else:
                         break  # For other unknown errors, break attempt loop, try next model
 
-        # Fallback to Gemini Server-Side
-        logger.warning(
-            f"All Groq models failed. Falling back to Gemini Server-Side. Last Groq Error: {last_error}"
-        )
-        try:
-            gemini = GeminiService()  # uses server-side key
-            answer = gemini.query(
-                user_input, context=context, chat_history=chat_history
-            )
-            if answer:
-                return answer
-        except Exception as e:
-            logger.error(f"Gemini fallback failed: {e}")
-            last_error = e
+        # We do NOT fallback to Gemini for general text tasks, per architecture rules.
+        # If all Groq models fail, raise the last error.
+        if last_error:
+            logger.error(f"All LLM models failed. Last error: {last_error}")
+            raise Exception(f"AI Provider temporarily unavailable: {last_error}")
 
-        logger.error(f"All providers failed. Last error: {last_error}")
-        return "⚠️ We are currently experiencing high demand and our AI providers are temporarily unavailable. Please try again in a few moments."
+        raise Exception("All LLM models failed for unknown reasons.")
 
     async def astream(
         self,
@@ -288,27 +449,17 @@ class MathAIEngine:
         context: str = "",
         chat_history: list = None,
         system_prompt: str = None,
+        action: str = None,
     ) -> AsyncGenerator[str, None]:
-        """Centralized streaming using Groq Primary -> Groq Fallback -> Gemini."""
+        """Centralized streaming using Groq Primary -> Groq Fallback."""
         if chat_history is None:
             chat_history = []
 
         llm_messages = self._build_messages(
-            user_input, context, chat_history, system_prompt
+            user_input, context, chat_history, system_prompt, action
         )
-        if settings.use_gemini:
-            try:
-                gemini = GeminiService()
-                success = False
-                async for chunk in gemini.stream(user_input, context=context, chat_history=chat_history):
-                    if chunk:
-                        success = True
-                        yield chunk
-                if success:
-                    return
-            except Exception as e:
-                logger.error(f"Gemini primary stream failed: {e}")
-                last_error = e
+        # Gemini is no longer the primary provider.
+        # Removing Gemini block to ensure Groq is first.
 
         models_to_try = [settings.groq_primary_model] + settings.groq_model_fallbacks
 
@@ -321,45 +472,43 @@ class MathAIEngine:
                 last_error = e
                 continue
 
-            # For streaming, we attempt once per model.
-            # If 429 or any error occurs before yielding content, we catch it instantly and move to the fallback.
-            try:
-                success = False
-                async for chunk in llm.astream(llm_messages):
-                    if chunk.content:
-                        success = True
-                        yield chunk.content
-                if success:
-                    return  # Successfully streamed from this model
-            except Exception as e:
-                last_error = e
-                logger.warning(
-                    f"Groq {model_name} stream failed: {e}. Trying next model."
-                )
+            for attempt in range(2):
+                try:
+                    success = False
+                    async for chunk in llm.astream(llm_messages):
+                        if chunk.content:
+                            success = True
+                            yield chunk.content
+                    if success:
+                        return
+                except Exception as e:
+                    last_error = e
+                    err_str = str(e).lower()
+                    logger.warning(
+                        f"Groq {model_name} stream attempt {attempt+1} failed: {e}."
+                    )
+                    if success:
+                        break
 
-        # Fallback to Gemini
-        logger.warning(
-            f"All Groq streams failed. Falling back to Gemini Server-Side. Last Groq Error: {last_error}"
-        )
-        try:
-            gemini = GeminiService()  # uses server-side key
-            success = False
-            async for chunk in gemini.stream(
-                user_input, context=context, chat_history=chat_history
-            ):
-                if chunk:
-                    success = True
-                    yield chunk
-            if success:
-                return
-        except Exception as e:
-            logger.error(f"Gemini fallback stream failed: {e}")
-            last_error = e
+                    if "429" in err_str or "rate limit" in err_str or "401" in err_str or "invalid" in err_str or "decommissioned" in err_str:
+                        logger.info(f"Rate limit or fatal error on {model_name}, failing over immediately.")
+                        break  # Immediate failover
+                    elif any(code in err_str for code in ["500", "502", "503", "504", "timeout"]):
+                        if attempt == 0:
+                            logger.info(f"Transient error on {model_name}, retrying once...")
+                            import asyncio
+                            await asyncio.sleep(1)
+                            continue
+                        else:
+                            break
+                    else:
+                        break
 
+        # We do NOT fallback to Gemini for general text tasks, per architecture rules.
         logger.error(f"All stream providers failed. Last error: {last_error}")
         yield "\n\n⚠️ We are currently experiencing high demand and our AI providers are temporarily unavailable. Please try again in a few moments."
 
-    def query(self, user_input: str) -> Dict[str, Any]:
+    def query(self, user_input: str, action: str = None) -> Dict[str, Any]:
         """Process a user math query through the full pipeline."""
         hint = self._symbolic_hint(user_input)
         source_docs, context = self._retrieve_context(user_input)
@@ -368,7 +517,7 @@ class MathAIEngine:
         # Store human message BEFORE LLM call
         self.memory.add_message("human", user_input)
 
-        answer = self.generate(user_input, context, chat_history)
+        answer = self.generate(user_input, context, chat_history, action=action)
 
         self.memory.add_message("assistant", answer)
 

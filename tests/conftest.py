@@ -3,6 +3,7 @@ from backend.src.config import settings
 
 # Force in-memory Qdrant for tests to prevent DB lock errors
 settings.qdrant_url = ":memory:"
+settings.use_firebase = False
 
 from backend.src.main import app
 from backend.src.api.middleware.auth import verify_firebase_token

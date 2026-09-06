@@ -17,7 +17,7 @@ logger = logging.getLogger("math_assistant.indexer")
 class KnowledgeIndexer:
     """Parses local markdown files and indexes them into the Qdrant vector store."""
     
-    def __init__(self, kb_dir: str = "knowledge-base", qdrant_service=None):
+    def __init__(self, kb_dir: str = "backend/knowledge-base", qdrant_service=None):
         self.kb_dir = kb_dir
         self.qdrant = qdrant_service or QdrantService()
 

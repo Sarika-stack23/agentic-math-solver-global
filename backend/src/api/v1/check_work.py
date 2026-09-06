@@ -157,7 +157,7 @@ async def check_work_image(
         image_bytes = await validate_upload(file, allow_pdf=False)
 
         # First, extract the student's work from the image
-        if settings.use_gemini:
+        if getattr(settings, "gemini_api_key", ""):
             vision = GeminiVisionService()
         else:
             from backend.src.services.gemini_service import GroqVisionService

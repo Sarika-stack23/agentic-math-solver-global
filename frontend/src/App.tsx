@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom';
-import { Home, PenLine, BookOpen, Clock, BarChart3, Settings, LogOut, Calculator, Menu, X, User } from 'lucide-react';
+import { Home, PenLine, BookOpen, Clock, BarChart3, Settings, LogOut, Sigma, Menu, X, Moon, Sun } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ChatInterface } from './components/Chat/ChatInterface';
 import { ProgressDashboard } from './components/Dashboard/ProgressDashboard';
@@ -48,67 +48,128 @@ const Login: React.FC = () => {
   const error = localError || authError;
 
   return (
-    <div className="login-container">
-      <div className="login-mesh" />
-      <div className="login-card">
-        <div className="icon-badge animate-float" style={{ width: 72, height: 72, borderRadius: 20, marginBottom: '1.5rem' }}>
-          <Calculator size={36} color="white" />
-        </div>
-
-        <h1 style={{ fontSize: '2.2rem', fontWeight: 800, marginBottom: '0.5rem', letterSpacing: '-0.03em', lineHeight: 1.2 }}>
-          {t('auth.welcome')} <span className="text-gradient">{t('app.name')}</span>
-        </h1>
-
-        <p style={{ color: 'var(--text-secondary)', fontSize: '1.05rem', marginBottom: '1.5rem' }}>
-          {t('auth.subtitle')}
-        </p>
-
-        {error && (
-          <div style={{ width: '100%', padding: '0.75rem', backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid var(--danger)', color: 'var(--danger)', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.9rem' }}>
-            {error}
+    <div style={{ display: 'flex', minHeight: '100vh', width: '100%' }}>
+      {/* Left Column: Form */}
+      <div style={{ flex: '1 1 50%', display: 'flex', flexDirection: 'column', padding: '2rem', background: 'var(--bg-primary)', position: 'relative', zIndex: 1 }}>
+        
+        {/* Top Logo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: 'auto' }}>
+          <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Sigma size={22} color="white" />
           </div>
-        )}
-
-        <form onSubmit={handleEmailSubmit} style={{ width: '100%', marginBottom: '1rem' }}>
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={{ width: '100%', padding: '0.75rem', marginBottom: '0.5rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface-light)', color: 'var(--text)' }}
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={{ width: '100%', padding: '0.75rem', marginBottom: '1rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface-light)', color: 'var(--text)' }}
-          />
-          <button type="submit" className="google-btn" style={{ background: 'var(--primary)', color: 'white', border: 'none' }}>
-            {isSignUp ? 'Sign Up' : 'Log In'}
-          </button>
-        </form>
-
-        <div style={{ marginBottom: '1rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-          {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
-          <button type="button" onClick={() => setIsSignUp(!isSignUp)} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', textDecoration: 'underline' }}>
-            {isSignUp ? 'Log In' : 'Sign Up'}
-          </button>
+          <span style={{ fontSize: '1.25rem', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
+            {t('app.name')}
+          </span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', width: '100%', marginBottom: '1rem' }}>
-          <hr style={{ flex: 1, borderColor: 'var(--border)' }} />
-          <span style={{ margin: '0 10px', color: 'var(--text-muted)' }}>or</span>
-          <hr style={{ flex: 1, borderColor: 'var(--border)' }} />
+        {/* Form Container */}
+        <div style={{ maxWidth: '420px', width: '100%', margin: '0 auto' }}>
+          <h1 style={{ fontSize: '2.5rem', fontWeight: 700, marginBottom: '0.5rem', letterSpacing: '-0.03em', color: 'var(--text-primary)' }}>
+            Welcome back
+          </h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', marginBottom: '2.5rem' }}>
+            Log in to your workspace or create a new account to start solving.
+          </p>
+
+          {error && (
+            <div style={{ width: '100%', padding: '1rem', backgroundColor: 'var(--danger-bg, rgba(239, 68, 68, 0.1))', border: '1px solid var(--danger)', color: 'var(--danger)', borderRadius: '12px', marginBottom: '1.5rem', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontWeight: 600 }}>Error:</span> {error}
+            </div>
+          )}
+
+          <form onSubmit={handleEmailSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: 500, color: 'var(--text-primary)' }}>Email address</label>
+              <input
+                type="email"
+                placeholder="name@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                style={{ width: '100%', padding: '0.875rem 1rem', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--surface-light)', color: 'var(--text-primary)', fontSize: '1rem', transition: 'all 0.2s', outline: 'none' }}
+                onFocus={(e) => e.target.style.borderColor = 'var(--primary)'}
+                onBlur={(e) => e.target.style.borderColor = 'var(--border)'}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: 500, color: 'var(--text-primary)' }}>Password</label>
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                style={{ width: '100%', padding: '0.875rem 1rem', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--surface-light)', color: 'var(--text-primary)', fontSize: '1rem', transition: 'all 0.2s', outline: 'none' }}
+                onFocus={(e) => e.target.style.borderColor = 'var(--primary)'}
+                onBlur={(e) => e.target.style.borderColor = 'var(--border)'}
+              />
+            </div>
+            <button type="submit" style={{ width: '100%', padding: '0.875rem', marginTop: '0.5rem', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '12px', fontSize: '1rem', fontWeight: 600, cursor: 'pointer', transition: 'transform 0.1s, opacity 0.2s' }}
+              onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
+              onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+              onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.98)'}
+              onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            >
+              {isSignUp ? 'Create Account' : 'Sign In'}
+            </button>
+          </form>
+
+          <div style={{ display: 'flex', alignItems: 'center', margin: '2rem 0' }}>
+            <hr style={{ flex: 1, borderColor: 'var(--border)', borderTop: 'none' }} />
+            <span style={{ margin: '0 1rem', color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 500 }}>OR CONTINUE WITH</span>
+            <hr style={{ flex: 1, borderColor: 'var(--border)', borderTop: 'none' }} />
+          </div>
+
+          <button type="button" onClick={signInWithGoogle} style={{ width: '100%', padding: '0.875rem', background: 'var(--surface-light)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '12px', fontSize: '1rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', transition: 'background 0.2s' }}
+            onMouseOver={(e) => e.currentTarget.style.background = 'var(--bg-elevated)'}
+            onMouseOut={(e) => e.currentTarget.style.background = 'var(--surface-light)'}
+          >
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo" style={{ width: '20px' }} />
+            Google
+          </button>
+
+          <div style={{ textAlign: 'center', marginTop: '2.5rem', fontSize: '0.95rem', color: 'var(--text-secondary)' }}>
+            {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
+            <button type="button" onClick={() => setIsSignUp(!isSignUp)} style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 600, cursor: 'pointer', padding: 0 }}>
+              {isSignUp ? 'Sign in instead' : 'Create one now'}
+            </button>
+          </div>
         </div>
 
-        <button type="button" className="google-btn" onClick={signInWithGoogle}>
-          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo" />
-          {t('auth.continueWithGoogle')}
-        </button>
+        {/* Footer */}
+        <div style={{ marginTop: 'auto', textAlign: 'center', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+          By continuing, you agree to our Terms of Service & Privacy Policy.
+        </div>
+      </div>
 
-        <div style={{ marginTop: '2rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-          {t('auth.terms')}
+      {/* Right Column: Hero Graphic (Desktop Only) */}
+      <div className="desktop-only" style={{ flex: '1 1 50%', background: 'linear-gradient(135deg, var(--bg-elevated) 0%, var(--bg-primary) 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem', position: 'relative', overflow: 'hidden', borderLeft: '1px solid var(--border)' }}>
+        
+        {/* Decorative Math Elements */}
+        <div style={{ position: 'absolute', top: '10%', left: '10%', opacity: 0.05, fontSize: '10rem', fontWeight: 'bold', fontFamily: 'serif', pointerEvents: 'none', color: 'var(--text-primary)' }}>∫</div>
+        <div style={{ position: 'absolute', bottom: '15%', right: '15%', opacity: 0.05, fontSize: '12rem', fontWeight: 'bold', fontFamily: 'serif', pointerEvents: 'none', color: 'var(--text-primary)' }}>∑</div>
+        <div style={{ position: 'absolute', top: '40%', right: '5%', opacity: 0.05, fontSize: '8rem', fontWeight: 'bold', fontFamily: 'serif', pointerEvents: 'none', color: 'var(--text-primary)' }}>π</div>
+
+        <div style={{ maxWidth: '500px', zIndex: 1 }}>
+          <div style={{ display: 'inline-flex', padding: '0.5rem 1rem', background: 'var(--primary)', color: 'white', borderRadius: '9999px', fontSize: '0.85rem', fontWeight: 600, letterSpacing: '0.05em', marginBottom: '1.5rem', textTransform: 'uppercase' }}>
+            Advanced Engine
+          </div>
+          <h2 style={{ fontSize: '3rem', fontWeight: 800, lineHeight: 1.1, marginBottom: '1.5rem', color: 'var(--text-primary)', letterSpacing: '-0.03em' }}>
+            Master Mathematics <br/>
+            <span style={{ color: 'var(--primary)' }}>Symbolically.</span>
+          </h2>
+          <p style={{ fontSize: '1.25rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '3rem' }}>
+            Stop struggling with syntax. Upload a photo, write an equation, or ask a question. Get step-by-step verified proofs and instantly practice the concepts you missed.
+          </p>
+
+          <div style={{ display: 'flex', gap: '2rem' }}>
+            <div>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)' }}>100%</div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 500, marginTop: '0.25rem' }}>Step-by-Step Verified</div>
+            </div>
+            <div>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)' }}>Multi</div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 500, marginTop: '0.25rem' }}>Modal Inputs (Img, PDF)</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -117,92 +178,100 @@ const Login: React.FC = () => {
 
 
 /**
- * Sidebar navigation
+ * Top Navigation Bar
  */
-const Sidebar: React.FC<{ isOpen: boolean; closeMenu: () => void }> = ({ isOpen, closeMenu }) => {
+const TopNav: React.FC = () => {
   const { logout, user } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [isDark, setIsDark] = useState(() => {
+    return document.documentElement.getAttribute('data-theme') !== 'light';
+  });
+
+  const toggleTheme = () => {
+    const newTheme = isDark ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', newTheme);
+    setIsDark(!isDark);
+  };
 
   return (
-    <>
-      <div className={`sidebar ${isOpen ? 'open' : ''}`}>
-        <div className="sidebar-logo">
-          <div className="icon-badge">
-            <Calculator size={18} color="white" />
+    <header className="top-nav">
+      <div className="top-nav-container">
+        <div className="top-nav-brand">
+          <div className="icon-badge" style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Sigma size={20} color="white" />
           </div>
-          <h2>{t('app.name')}</h2>
-          {isOpen && (
-            <button className="btn btn-ghost" onClick={closeMenu} style={{ marginLeft: 'auto' }} aria-label="Close menu">
-              <X size={18} />
+          <h2 style={{ fontSize: '1.2rem', margin: 0, fontWeight: 800, color: 'var(--text-primary)' }}>
+            {t('app.name')}
+          </h2>
+        </div>
+
+        {/* Desktop Navigation */}
+        <nav className="top-nav-links desktop-only">
+          <NavLink to="/" className={({ isActive }) => `nav-link-top ${isActive ? 'active' : ''}`} end>
+             {t('nav.home')}
+          </NavLink>
+          <NavLink to="/solve" className={({ isActive }) => `nav-link-top ${isActive ? 'active' : ''}`}>
+             {t('nav.solve')}
+          </NavLink>
+          <NavLink to="/practice" className={({ isActive }) => `nav-link-top ${isActive ? 'active' : ''}`}>
+             {t('nav.practice')}
+          </NavLink>
+          <NavLink to="/history" className={({ isActive }) => `nav-link-top ${isActive ? 'active' : ''}`}>
+             {t('nav.history')}
+          </NavLink>
+          <NavLink to="/progress" className={({ isActive }) => `nav-link-top ${isActive ? 'active' : ''}`}>
+             {t('nav.progress')}
+          </NavLink>
+        </nav>
+
+        <div className="top-nav-actions desktop-only">
+          <button onClick={toggleTheme} className="icon-btn" title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
+            {isDark ? <Sun size={20} /> : <Moon size={20} />}
+          </button>
+          <NavLink to="/settings" className="icon-btn" aria-label={t('nav.settings')}>
+            <Settings size={20} />
+          </NavLink>
+          {user && (
+            <button onClick={logout} className="icon-btn" title={t('nav.signOut')}>
+              <LogOut size={20} />
             </button>
           )}
         </div>
 
-        <nav aria-label="Main navigation">
-          <NavLink to="/" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} end onClick={closeMenu}>
-            <Home size={18} /> {t('nav.home')}
-          </NavLink>
-          <NavLink to="/solve" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} onClick={closeMenu}>
-            <PenLine size={18} /> {t('nav.solve')}
-          </NavLink>
-          <NavLink to="/practice" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} onClick={closeMenu}>
-            <BookOpen size={18} /> {t('nav.practice')}
-          </NavLink>
-          <NavLink to="/history" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} onClick={closeMenu}>
-            <Clock size={18} /> {t('nav.history')}
-          </NavLink>
-          <NavLink to="/progress" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} onClick={closeMenu}>
-            <BarChart3 size={18} /> {t('nav.progress')}
-          </NavLink>
-          <NavLink to="/settings" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} onClick={closeMenu}>
-            <Settings size={18} /> {t('nav.settings')}
-          </NavLink>
-        </nav>
-
-        <div className="sidebar-footer">
-          {user && (
-            <>
-              <div className="sidebar-user">
-                <User size={14} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle' }} />
-                {user.email || 'Guest'}
-              </div>
-              <button onClick={() => { closeMenu(); logout(); }} className="nav-link" style={{ color: 'var(--text-secondary)' }}>
-                <LogOut size={18} /> {t('nav.signOut')}
-              </button>
-            </>
-          )}
-        </div>
+        {/* Mobile Menu Toggle */}
+        <button className="mobile-only icon-btn" onClick={() => setMenuOpen(!menuOpen)}>
+          {menuOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
       </div>
-      {isOpen && (
-        <div className="mobile-menu-overlay" style={{ display: 'block' }} onClick={closeMenu} />
+
+      {/* Mobile Menu Dropdown */}
+      {menuOpen && (
+        <div className="mobile-menu">
+          <NavLink to="/" className="nav-link" onClick={() => setMenuOpen(false)} end><Home size={18}/> {t('nav.home')}</NavLink>
+          <NavLink to="/solve" className="nav-link" onClick={() => setMenuOpen(false)}><PenLine size={18}/> {t('nav.solve')}</NavLink>
+          <NavLink to="/practice" className="nav-link" onClick={() => setMenuOpen(false)}><BookOpen size={18}/> {t('nav.practice')}</NavLink>
+          <NavLink to="/history" className="nav-link" onClick={() => setMenuOpen(false)}><Clock size={18}/> {t('nav.history')}</NavLink>
+          <NavLink to="/progress" className="nav-link" onClick={() => setMenuOpen(false)}><BarChart3 size={18}/> {t('nav.progress')}</NavLink>
+          <NavLink to="/settings" className="nav-link" onClick={() => setMenuOpen(false)}><Settings size={18}/> {t('nav.settings')}</NavLink>
+          <button className="nav-link" onClick={() => { toggleTheme(); setMenuOpen(false); }}>
+            {isDark ? <Sun size={18}/> : <Moon size={18}/>} {isDark ? 'Light Mode' : 'Dark Mode'}
+          </button>
+          {user && <button className="nav-link" onClick={() => { logout(); setMenuOpen(false); }}><LogOut size={18}/> {t('nav.signOut')}</button>}
+        </div>
       )}
-    </>
+    </header>
   );
 };
 
 /**
- * Main application layout with sidebar
+ * Main application layout with Top Nav
  */
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
-
   return (
     <div className="app-container">
-      <Sidebar isOpen={isMobileMenuOpen} closeMenu={() => setIsMobileMenuOpen(false)} />
+      <TopNav />
       <div className="main-content">
-        {/* Mobile Header */}
-        <div className="mobile-header">
-          <button className="btn btn-ghost" onClick={() => setIsMobileMenuOpen(true)} aria-label="Open menu">
-            <Menu size={22} />
-          </button>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginLeft: '0.5rem' }}>
-            <div className="icon-badge" style={{ width: 28, height: 28, borderRadius: 8 }}>
-              <Calculator size={14} color="white" />
-            </div>
-            <span className="text-gradient" style={{ fontWeight: 700, fontSize: '1rem' }}>{t('app.name')}</span>
-          </div>
-        </div>
-        {/* Page Content */}
-        <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div className="content-wrapper">
           {children}
         </div>
       </div>

@@ -23,7 +23,7 @@ _GEMINI_CLIENT = None
 
 def _get_gemini_client():
     from google import genai
-    
+
     global _GEMINI_CLIENT
     if _GEMINI_CLIENT is None:
         api_key = settings.gemini_api_key
@@ -63,15 +63,17 @@ class GeminiService:
 
     def __init__(self):
         self.primary_model = settings.gemini_primary_model
-        self.fallback_model = settings.gemini_fallback_model
         self.prompt_service = PromptService()
 
-    def query(self, user_input: str, context: str = "", chat_history: list = None) -> str:
+    def query(self, user_input: str, context: str = "", chat_history: list = None, action: str = None) -> str:
         """Send a math query to Gemini and return the response."""
+        from backend.src.services.llm_service import MathAIEngine
         from google.genai import types
-        
-        system_template = self.prompt_service.get_system_prompt()
-        system_text = system_template.replace("{context}", context or "")
+
+        base_prompt = self.prompt_service.get_system_prompt()
+        system_text = base_prompt.replace("{context}", context)
+        if action and action in MathAIEngine.ACTION_PROMPTS:
+            system_text += "\n" + MathAIEngine.ACTION_PROMPTS[action]
 
         # Build conversation parts
         parts = [system_text + "\n\n"]
@@ -85,7 +87,7 @@ class GeminiService:
 
         prompt = "".join(parts)
 
-        models_to_try = [self.primary_model, self.fallback_model]
+        models_to_try = [self.primary_model]
         last_error = None
         client = _get_gemini_client()
 
@@ -117,31 +119,33 @@ class GeminiService:
                     err_str = str(e).lower()
                     logger.warning(f"Gemini {model_name} attempt {attempt+1} failed: {e}")
 
-                    if "429" in err_str or "resource_exhausted" in err_str or "quota" in err_str:
+                    if "429" in err_str or "quota" in err_str or "401" in err_str or "404" in err_str or "invalid" in err_str:
+                        logger.info(f"Rate limit or fatal error on {model_name}, failing over immediately.")
+                        break  # Immediate failover to next model, skip retry
+                    elif any(code in err_str for code in ["500", "502", "503", "504", "timeout", "deadline"]):
                         if attempt == 0:
-                            logger.info(f"Rate limit on {model_name}, retrying with backoff...")
-                            time.sleep(2)
+                            logger.info(f"Transient error on {model_name}, retrying once... ({err_str})")
+                            time.sleep(1)
                             continue
                         else:
-                            logger.info(f"Rate limit on {model_name} exhausted, trying fallback model...")
-                            break  # Skip to next model
-                    elif any(code in err_str for code in ["500", "502", "503", "504", "timeout", "deadline"]):
-                        logger.info(f"Transient error on {model_name}, retrying... ({err_str})")
-                        time.sleep(2 ** attempt)
-                        continue
+                            break  # exhausted retries, fail over
                     else:
-                        break  # Non-retryable (e.g. 400 Bad Request, 401 Invalid Key)
+                        break  # Non-retryable
 
         logger.error(f"All Gemini models failed: {last_error}")
         return f"⚠️ Gemini API error: {last_error}"
 
-    async def stream(self, user_input: str, context: str = "", chat_history: list = None) -> AsyncGenerator[str, None]:
+    async def stream(self, user_input: str, context: str = "", chat_history: list = None, action: str = None) -> AsyncGenerator[str, None]:
         """Stream a response token by token for SSE delivery."""
         from google.genai import types
-        
-        system_template = self.prompt_service.get_system_prompt()
-        system_text = system_template.replace("{context}", context or "")
-        
+        import asyncio
+        from backend.src.services.llm_service import MathAIEngine
+
+        base_prompt = self.prompt_service.get_system_prompt()
+        system_text = base_prompt.replace("{context}", context)
+        if action and action in MathAIEngine.ACTION_PROMPTS:
+            system_text += "\n" + MathAIEngine.ACTION_PROMPTS[action]
+
         parts = [system_text + "\n\n"]
         if chat_history:
             for msg in chat_history:
@@ -159,42 +163,44 @@ class GeminiService:
             safety_settings=_get_safety_settings()
         )
 
-        try:
-            response_stream = client.models.generate_content_stream(
-                model=self.primary_model,
-                contents=prompt,
-                config=config
-            )
-            for chunk in response_stream:
-                if chunk.text:
-                    yield chunk.text
-        except Exception as e:
-            logger.error(f"Primary model {self.primary_model} streaming failed: {e}")
-            logger.info(f"Falling back to {self.fallback_model}...")
-            try:
-                response_stream = client.models.generate_content_stream(
-                    model=self.fallback_model,
-                    contents=prompt,
-                    config=config
-                )
-                for chunk in response_stream:
-                    if chunk.text:
-                        yield chunk.text
-            except Exception as e2:
-                logger.error(f"Fallback model {self.fallback_model} streaming also failed: {e2}")
-                logger.info("Falling back to gemini-flash-lite-latest...")
+        models_to_try = [self.primary_model]
+        last_error = None
+
+        for model_name in models_to_try:
+            for attempt in range(2):
                 try:
-                    response_stream = client.models.generate_content_stream(
-                        model="gemini-flash-lite-latest",
+                    success = False
+                    response_stream = await client.aio.models.generate_content_stream(
+                        model=model_name,
                         contents=prompt,
                         config=config
                     )
-                    for chunk in response_stream:
+                    async for chunk in response_stream:
                         if chunk.text:
+                            success = True
                             yield chunk.text
-                except Exception as e3:
-                    logger.error(f"All Gemini streaming models failed: {e3}")
-                    yield f"\n\n⚠️ Streaming error: All Gemini models failed. You might be out of API quota."
+                    if success:
+                        return
+                except Exception as e:
+                    last_error = e
+                    err_str = str(e).lower()
+                    logger.warning(f"Gemini {model_name} stream attempt {attempt+1} failed: {e}")
+
+                    if "429" in err_str or "quota" in err_str or "401" in err_str or "404" in err_str or "invalid" in err_str:
+                        logger.info(f"Rate limit or fatal error on {model_name}, failing over immediately.")
+                        break  # Immediate failover
+                    elif any(code in err_str for code in ["500", "502", "503", "504", "timeout", "deadline"]):
+                        if attempt == 0:
+                            logger.info(f"Transient error on {model_name}, retrying once... ({err_str})")
+                            await asyncio.sleep(1)
+                            continue
+                        else:
+                            break
+                    else:
+                        break
+
+        logger.error(f"All Gemini streaming models failed. Last error: {last_error}")
+        yield f"\n\n⚠️ Streaming error: All Gemini models failed. The service may be overloaded."
 
 class GeminiVisionService:
     """Gemini Vision for extracting math from images."""
@@ -291,7 +297,7 @@ class GroqVisionService:
     def __init__(self):
         # Groq has decommissioned their vision models. We provide a mock fallback for local testing.
         pass
-        
+
     def extract_math_from_image(self, image_bytes: bytes, mime_type: str = "image/jpeg") -> str:
         return "x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}\n\n(Note: This is a mock response because Groq vision models are currently offline. Please add a Gemini API Key to use real vision extraction.)"
 
