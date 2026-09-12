@@ -4,6 +4,8 @@
 .env.local
 .env.example.save
 backend/firebase-adminsdk.json
+*firebase-adminsdk*.json
+firebase_credentials*.json
 
 # ── Python ─────────────────────────────────────────────────
 __pycache__/

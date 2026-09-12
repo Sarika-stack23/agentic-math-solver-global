@@ -47,12 +47,12 @@ async function signupAndLogin(page: any) {
   await page.goto('/login');
   
   // Click the toggle to switch to Sign Up mode
-  await page.getByRole('button', { name: 'Create one now', exact: true }).click();
+  await page.getByTestId('auth-toggle').click();
   
   // Fill credentials
   const testEmail = `test-${Date.now()}@example.com`;
-  await page.getByPlaceholder('Email').fill(testEmail);
-  await page.getByPlaceholder('Password').fill('Password123!');
+  await page.getByPlaceholder('name@example.com').fill(testEmail);
+  await page.getByPlaceholder('••••••••').fill('Password123!');
   
   // Click the submit button (which is now 'Sign Up')
   await page.getByRole('button', { name: 'Create Account', exact: true }).click();
@@ -69,7 +69,7 @@ test.describe('Phase 2 E2E Verification', () => {
     
     // Should be redirected to /login
     await expect(page).toHaveURL(/.*\/login/);
-    await expect(page.getByText('Welcome to')).toBeVisible();
+    await expect(page.getByText('Welcome back')).toBeVisible();
   });
 
 
@@ -86,7 +86,11 @@ test.describe('Phase 2 E2E Verification', () => {
     }
     
     // Click logout in sidebar
-    await page.getByRole('button', { name: /Sign Out/i }).click();
+    if (isMobile) {
+      await page.getByTestId('sign-out-btn-mobile').click();
+    } else {
+      await page.getByTestId('sign-out-btn').click();
+    }
     
     // Should be back at login
     await expect(page).toHaveURL(/.*\/login/);

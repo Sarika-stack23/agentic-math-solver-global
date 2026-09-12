@@ -35,19 +35,23 @@ def init_firebase():
             import json
             cred_dict = json.loads(os.environ.get("FIREBASE_KEY_JSON"))
             cred = credentials.Certificate(cred_dict)
+            _FIREBASE_APP = firebase_admin.initialize_app(cred)
+        elif settings.firebase_credentials_path and os.path.exists(settings.firebase_credentials_path):
+            cred = credentials.Certificate(settings.firebase_credentials_path)
+            _FIREBASE_APP = firebase_admin.initialize_app(cred)
+        elif settings.firebase_project_id:
+            logger.info("Initializing Firebase Admin with projectId only (Token verification mode).")
+            _FIREBASE_APP = firebase_admin.initialize_app(options={"projectId": settings.firebase_project_id})
         else:
-            cred_path = settings.firebase_credentials_path
-            if not cred_path or not os.path.exists(cred_path):
-                logger.warning(
-                    f"Firebase credentials not found. "
-                    "Running in unauthenticated/memory-fallback mode."
-                )
-                return
-            cred = credentials.Certificate(cred_path)
+            logger.warning("No Firebase credentials or projectId found. Running in unauthenticated/memory-fallback mode.")
+            return
 
-        _FIREBASE_APP = firebase_admin.initialize_app(cred)
-        _FIRESTORE_CLIENT = firestore.client()
-        logger.info("Firebase Admin SDK initialized successfully.")
+        try:
+            _FIRESTORE_CLIENT = firestore.client()
+            logger.info("Firebase Admin SDK & Firestore initialized successfully.")
+        except Exception as db_err:
+            logger.warning(f"Could not initialize Firestore client (likely missing credentials). Proceeding without Firestore: {db_err}")
+            _FIRESTORE_CLIENT = None
     except Exception as e:
         logger.error(f"Failed to initialize Firebase Admin SDK: {e}")
 

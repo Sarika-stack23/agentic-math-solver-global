@@ -23,74 +23,82 @@ export const HomePage: React.FC = () => {
     <div className="home-container" style={{ paddingBottom: '4rem' }}>
       {/* Clean background — no messy floating symbols */}
 
-      <div style={{ marginBottom: '1.5rem', marginTop: '2rem' }}>
-        <div style={{ width: 48, height: 48, background: 'var(--accent)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-md)' }}>
-          <Sparkles size={24} color="white" />
+      {/* Logo icon */}
+      <div style={{ marginBottom: '1.5rem', marginTop: '2rem' }} className="animate-float">
+        <div className="icon-badge" style={{ width: 72, height: 72, borderRadius: 20, fontSize: '2rem' }}>
+          <Sparkles size={36} color="white" />
         </div>
       </div>
 
-      <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '3rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '1rem', letterSpacing: '-0.02em' }}>
-        AI-Powered Mathematics Workspace
+      <h1 className="home-headline" style={{ marginBottom: '0.5rem', fontSize: '3rem' }}>
+        <span className="text-gradient">AI-Powered Mathematics</span>
       </h1>
-      <p style={{ fontFamily: 'var(--font-sans)', fontSize: '1.1rem', color: 'var(--text-secondary)', maxWidth: '600px', margin: '0 auto 3rem', lineHeight: '1.6' }}>
-        A professional environment for exploring, verifying, and understanding mathematics symbolically.
+      <p className="home-subheadline" style={{ maxWidth: '600px', margin: '0 auto 2.5rem', fontSize: '1.1rem' }}>
+        Understand math. Don't just get the answer. Symbolically verified where supported.
       </p>
 
       {/* Main input */}
-      <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '0.5rem', maxWidth: '700px', width: '100%', marginBottom: '3rem', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-xl)', padding: '4px', paddingLeft: '16px', boxShadow: 'var(--shadow-sm)' }}>
+      <form onSubmit={handleSubmit} className="home-input-group" style={{ maxWidth: '700px', width: '100%' }}>
         <input
           type="text"
-          style={{ flex: 1, background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: '1.1rem', outline: 'none' }}
+          className="input"
+          style={{ padding: '16px 24px', fontSize: '1.1rem', borderRadius: '16px' }}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder={t('home.typeProblem')}
           aria-label={t('home.typeProblem')}
           autoFocus
         />
-        <button type="submit" className="btn btn-primary" style={{ padding: '12px 24px', borderRadius: 'var(--radius-lg)' }} disabled={!input.trim()} aria-label={t('solve.send')}>
-          <Send size={20} />
+        <button type="submit" className="btn btn-primary" style={{ padding: '0 24px', borderRadius: '14px' }} disabled={!input.trim()} aria-label={t('solve.send')}>
+          <Send size={24} />
         </button>
       </form>
 
       {/* Visual Action Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem', maxWidth: '800px', width: '100%' }}>
-        
-        <div className="card action-card" onClick={() => { if (input.trim()) handleSuggestion(`Check my work for: ${input}`); }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-            <div style={{ padding: '8px', background: 'var(--accent-subtle)', borderRadius: '8px', color: 'var(--accent)' }}>
-              <BookOpen size={20} />
-            </div>
-            <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Check My Work</span>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        gap: '1rem',
+        maxWidth: '700px',
+        width: '100%',
+        marginTop: '1.5rem'
+      }}>
+        <div
+          className="card glass"
+          style={{ padding: '1.5rem', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', transition: 'all 0.2s', border: '1px solid var(--accent)' }}
+          onClick={() => {
+            if (!input.trim()) return;
+            handleSuggestion(`Check my work for: ${input}`);
+          }}
+        >
+          <div style={{ background: 'var(--accent-glow)', padding: '12px', borderRadius: '50%' }}>
+            <Sparkles size={24} color="var(--accent)" />
           </div>
-          <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', margin: 0 }}>
-            Verify your own steps and get symbolic confirmation.
-          </p>
+          <span style={{ fontWeight: 600 }}>Check My Work</span>
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textAlign: 'center' }}>Already solved it? Verify your steps.</span>
         </div>
 
-        <div className="card action-card" onClick={() => navigate('/solve', { state: { openCamera: true } })}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-            <div style={{ padding: '8px', background: 'var(--bg-secondary)', borderRadius: '8px', color: 'var(--text-primary)' }}>
-              <Camera size={20} />
-            </div>
-            <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{t('home.takePhoto')}</span>
+        <div
+          className="card glass"
+          style={{ padding: '1.5rem', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', transition: 'all 0.2s' }}
+          onClick={() => navigate('/solve', { state: { openCamera: true } })}
+        >
+          <div style={{ background: 'var(--bg-elevated)', padding: '12px', borderRadius: '50%', border: '1px solid var(--border)' }}>
+            <Camera size={24} color="var(--text-secondary)" />
           </div>
-          <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', margin: 0 }}>
-            Scan handwritten equations directly from your camera.
-          </p>
+          <span style={{ fontWeight: 600 }}>{t('home.takePhoto')}</span>
         </div>
 
-        <div className="card action-card" onClick={() => navigate('/solve', { state: { openPdf: true } })}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-            <div style={{ padding: '8px', background: 'var(--bg-secondary)', borderRadius: '8px', color: 'var(--text-primary)' }}>
-              <FileText size={20} />
-            </div>
-            <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{t('home.uploadPdf')}</span>
+        <div
+          className="card glass"
+          style={{ padding: '1.5rem', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', transition: 'all 0.2s' }}
+          onClick={() => navigate('/solve', { state: { openPdf: true } })}
+        >
+          <div style={{ background: 'var(--bg-elevated)', padding: '12px', borderRadius: '50%', border: '1px solid var(--border)' }}>
+            <FileText size={24} color="var(--text-secondary)" />
           </div>
-          <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', margin: 0 }}>
-            Extract and solve math from textbooks and worksheets.
-          </p>
+          <span style={{ fontWeight: 600 }}>{t('home.uploadPdf')}</span>
         </div>
-
       </div>
 
       {/* Suggestion chips */}

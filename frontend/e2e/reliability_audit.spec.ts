@@ -50,8 +50,9 @@ async function authenticateUser(page: Page): Promise<void> {
   await page.goto(`${BASE_URL}/login`);
 
   // Ensure we're in Sign Up mode
-  const signUpToggle = page.locator('button', { hasText: 'Create one now' });
-  if (await signUpToggle.isVisible()) {
+  const signUpToggle = page.getByTestId('auth-toggle');
+  const toggleText = await signUpToggle.textContent();
+  if (toggleText?.includes('Create one now')) {
     await signUpToggle.click();
     await page.waitForTimeout(300);
   }
@@ -92,14 +93,14 @@ test.describe('Real-Browser Reliability Audit', () => {
     // Logout via sidebar
     // On desktop the sidebar is always visible; on mobile we need to open it
     const mobileMenuBtn = page.locator('button[aria-label="Open menu"]');
-    if (await mobileMenuBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+    const isMobile = page.viewportSize()?.width !== undefined && page.viewportSize()!.width < 1024;
+    if (isMobile) {
       await mobileMenuBtn.click();
       await page.waitForTimeout(500);
+      await page.getByTestId('sign-out-btn-mobile').click();
+    } else {
+      await page.getByTestId('sign-out-btn').click();
     }
-
-    // Click "Sign out" in the sidebar
-    const signOutBtn = page.locator('button', { hasText: /sign out/i });
-    await signOutBtn.click();
     await page.waitForURL(/\/login/, { timeout: 10000 });
     console.log('Logout successful');
 
@@ -119,11 +120,13 @@ test.describe('Real-Browser Reliability Audit', () => {
 
     // Open sidebar and sign out again
     await page.goto(`${BASE_URL}/solve`);
-    if (await mobileMenuBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+    if (isMobile) {
       await mobileMenuBtn.click();
       await page.waitForTimeout(500);
+      await page.getByTestId('sign-out-btn-mobile').click();
+    } else {
+      await page.getByTestId('sign-out-btn').click();
     }
-    await page.locator('button', { hasText: /sign out/i }).click();
     await page.waitForURL(/\/login/, { timeout: 10000 });
 
     await authenticateUser(page);
@@ -157,8 +160,8 @@ test.describe('Real-Browser Reliability Audit', () => {
     for (let i = 0; i < mathQueries.length; i++) {
       console.log(`\n--- Chat Interaction ${i + 1}: ${mathQueries[i]} ---`);
 
-      // The placeholder text is "Enter a math problem..."
-      const chatInput = page.getByPlaceholder('Enter a math problem...');
+      // The placeholder text is "Enter a math problem..." or "Ask a follow-up question..."
+      const chatInput = page.getByPlaceholder(/Enter a math problem|Ask a follow-up question/);
       await expect(chatInput).toBeVisible({ timeout: 10000 });
       await chatInput.fill(mathQueries[i]);
       await chatInput.press('Enter');
@@ -192,7 +195,7 @@ test.describe('Real-Browser Reliability Audit', () => {
     await expect(page).toHaveURL(/\/solve/);
 
     // Ask a question first
-    const chatInput = page.getByPlaceholder('Enter a math problem...');
+    const chatInput = page.getByPlaceholder(/Enter a math problem|Ask a follow-up question/);
     await chatInput.fill('What is the area of a circle with radius 5?');
     await chatInput.press('Enter');
 

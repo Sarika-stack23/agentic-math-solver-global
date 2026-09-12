@@ -354,6 +354,7 @@ class MathAIEngine:
         chat_history: list,
         system_prompt: str = None,
         action: str = None,
+        student_work: str = None,
     ) -> list:
         from backend.src.services.prompt_service import PromptService
         prompt_service = PromptService()
@@ -375,7 +376,12 @@ class MathAIEngine:
         llm_messages = [SystemMessage(content=system_prompt)]
         for msg in chat_history:
             llm_messages.append(msg)
-        llm_messages.append(HumanMessage(content=user_input))
+
+        user_content = user_input
+        if student_work:
+            user_content = f"Original Problem:\n{user_input}\n\nStudent's Attempt:\n{student_work}"
+
+        llm_messages.append(HumanMessage(content=user_content))
         return llm_messages
 
     def generate(
@@ -385,13 +391,14 @@ class MathAIEngine:
         chat_history: list = None,
         system_prompt: str = None,
         action: str = None,
+        student_work: str = None,
     ) -> str:
         """Centralized generation using Groq Primary -> Groq Fallback -> Gemini."""
         if chat_history is None:
             chat_history = []
 
         llm_messages = self._build_messages(
-            user_input, context, chat_history, system_prompt, action
+            user_input, context, chat_history, system_prompt, action, student_work
         )
         # Gemini is no longer primary. Fallbacks are configured at the end of this method.
 
@@ -450,13 +457,14 @@ class MathAIEngine:
         chat_history: list = None,
         system_prompt: str = None,
         action: str = None,
+        student_work: str = None,
     ) -> AsyncGenerator[str, None]:
         """Centralized streaming using Groq Primary -> Groq Fallback."""
         if chat_history is None:
             chat_history = []
 
         llm_messages = self._build_messages(
-            user_input, context, chat_history, system_prompt, action
+            user_input, context, chat_history, system_prompt, action, student_work
         )
         # Gemini is no longer the primary provider.
         # Removing Gemini block to ensure Groq is first.

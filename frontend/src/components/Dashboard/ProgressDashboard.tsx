@@ -59,10 +59,12 @@ export const ProgressDashboard: React.FC = () => {
 
   if (errorState) {
     return (
-      <div className="page-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', flexDirection: 'column', gap: '1rem' }}>
-        <div style={{ padding: '2rem', textAlign: 'center', backgroundColor: 'var(--bg-elevated)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
+      <div className="page-container content-wrapper" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ padding: '2rem', textAlign: 'center', backgroundColor: 'var(--bg-elevated)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', maxWidth: '600px' }}>
           <h2 style={{ marginBottom: '0.5rem', color: 'var(--text-primary)' }}>Progress Unavailable</h2>
-          <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>{errorState}</p>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+            We're currently unable to load your progress data. Please check your connection and try again.
+          </p>
           <button className="btn btn-primary" onClick={() => window.location.reload()}>Retry</button>
         </div>
       </div>
@@ -75,6 +77,25 @@ export const ProgressDashboard: React.FC = () => {
         <div className="loading-indicator">
           <div className="loading-spinner" />
           <span>{t('common.loading')}</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (stats.total_solved === 0) {
+    return (
+      <div className="page-container content-wrapper" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ padding: '3rem 2rem', textAlign: 'center', backgroundColor: 'var(--bg-elevated)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', maxWidth: '600px', width: '100%' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem', color: 'var(--text-muted)' }}>
+            <TrendingUp size={64} strokeWidth={1} />
+          </div>
+          <h2 style={{ marginBottom: '0.75rem', color: 'var(--text-primary)', fontSize: '1.5rem', fontWeight: 600 }}>Your progress will appear here</h2>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem', lineHeight: 1.6 }}>
+            Start solving math problems or practicing concepts to build your streak and track your accuracy over time.
+          </p>
+          <button className="btn btn-primary" onClick={() => window.location.href = '/solve'}>
+            Start Solving
+          </button>
         </div>
       </div>
     );

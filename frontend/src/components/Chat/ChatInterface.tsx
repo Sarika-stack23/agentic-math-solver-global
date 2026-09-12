@@ -192,30 +192,60 @@ export const MessageActionButtons: React.FC<{ content: string }> = ({ content })
 };
 
 /* ── Solution Action Chips ──────────────────────────────────────────── */
-const SolutionActions: React.FC<{ problem: string; onAction: (query: string, action?: string) => void }> = ({ problem, onAction }) => {
+const SolutionActions: React.FC<{ problem: string; onAction: (query: string, action?: string, studentWork?: string) => void }> = ({ problem, onAction }) => {
+  const [showCheckWork, setShowCheckWork] = useState(false);
+  const [studentWork, setStudentWork] = useState('');
+
   return (
-    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.75rem', paddingTop: '0.5rem' }}>
-      <button className="action-chip" onClick={() => onAction(problem, 'check')}>
-        <CheckCircle size={14} /> {t('solve.actions.checkMyWork')}
-      </button>
-      <button className="action-chip" onClick={() => onAction(problem, 'check')}>
-        <RefreshCw size={14} /> {t('solve.actions.checkAgain')}
-      </button>
-      <button className="action-chip" onClick={() => onAction(problem, 'steps')}>
-        <HelpCircle size={14} /> {t('solve.actions.why')}
-      </button>
-      <button className="action-chip" onClick={() => onAction(problem, 'another')}>
-        <RefreshCw size={14} /> {t('solve.actions.anotherMethod')}
-      </button>
-      <button className="action-chip" onClick={() => onAction(problem, 'hint')}>
-        <Lightbulb size={14} /> {t('solve.actions.hint')}
-      </button>
-      <button className="action-chip" onClick={() => onAction(problem, 'teach')}>
-        <BookOpen size={14} /> {t('solve.actions.teachMe')}
-      </button>
-      <button className="action-chip" onClick={() => onAction(problem, 'similar')}>
-        <Sparkles size={14} /> {t('solve.actions.similarProblem')}
-      </button>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.75rem', paddingTop: '0.5rem' }}>
+      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+        <button className="action-chip" onClick={() => onAction(problem, 'solve')}>
+          <CheckCircle size={14} /> {t('solve.actions.solve') || 'Solve'}
+        </button>
+        <button className="action-chip" onClick={() => onAction(problem, 'hint')}>
+          <Lightbulb size={14} /> {t('solve.actions.hint') || 'Hint'}
+        </button>
+        <button className="action-chip" onClick={() => onAction(problem, 'steps')}>
+          <HelpCircle size={14} /> {t('solve.actions.why') || 'Steps'}
+        </button>
+        <button className="action-chip" onClick={() => onAction(problem, 'answer')}>
+          <CheckCircle size={14} /> {t('solve.actions.answer') || 'Answer'}
+        </button>
+        <button className="action-chip" onClick={() => setShowCheckWork(!showCheckWork)}>
+          <RefreshCw size={14} /> {t('solve.actions.checkMyWork') || 'Check My Work'}
+        </button>
+        <button className="action-chip" onClick={() => onAction(problem, 'teach')}>
+          <BookOpen size={14} /> {t('solve.actions.teachMe') || 'Teach Me'}
+        </button>
+        <button className="action-chip" onClick={() => onAction(problem, 'another')}>
+          <RefreshCw size={14} /> {t('solve.actions.anotherMethod') || 'Another Method'}
+        </button>
+        <button className="action-chip" onClick={() => onAction(problem, 'similar')}>
+          <Sparkles size={14} /> {t('solve.actions.similarProblem') || 'Similar Problem'}
+        </button>
+        <button className="action-chip" onClick={() => onAction(problem, 'practice')}>
+          <BookOpen size={14} /> {t('solve.actions.practice') || 'Practice'}
+        </button>
+        <button className="action-chip" onClick={() => onAction(problem, 'ask_ai')}>
+          <HelpCircle size={14} /> {t('solve.actions.askAi') || 'Ask AI'}
+        </button>
+      </div>
+
+      {showCheckWork && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem', padding: '0.75rem', background: 'var(--bg-elevated)', borderRadius: '8px', border: '1px solid var(--border)' }}>
+          <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Your Attempt</label>
+          <textarea
+            value={studentWork}
+            onChange={(e) => setStudentWork(e.target.value)}
+            placeholder="Type your steps here..."
+            style={{ width: '100%', minHeight: '60px', padding: '0.5rem', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg-primary)', color: 'var(--text-primary)', resize: 'vertical' }}
+          />
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+            <button className="btn btn-secondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.85rem' }} onClick={() => setShowCheckWork(false)}>Cancel</button>
+            <button className="btn btn-primary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.85rem' }} onClick={() => { onAction(problem, 'check', studentWork); setShowCheckWork(false); setStudentWork(''); }}>Verify Work</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -279,16 +309,23 @@ export const ChatInterface: React.FC = () => {
 
   useEffect(() => { scrollToBottom(); }, [messages]);
 
-  const sendMessage = async (query: string, action?: string) => {
+  const sendMessage = async (query: string, action?: string, studentWork?: string) => {
     if (!query.trim() || !user) return;
 
     let displayQuery = query;
-    if (action === 'check') displayQuery = `Check my work for: ${query}`;
+    if (action === 'check') {
+        displayQuery = `Check my work for: ${query}`;
+        if (studentWork) displayQuery += `\n\nMy Attempt:\n${studentWork}`;
+    }
     else if (action === 'steps') displayQuery = `Explain steps for: ${query}`;
     else if (action === 'another') displayQuery = `Another method for: ${query}`;
     else if (action === 'hint') displayQuery = `Hint for: ${query}`;
     else if (action === 'teach') displayQuery = `Teach me: ${query}`;
     else if (action === 'similar') displayQuery = `Similar problem to: ${query}`;
+    else if (action === 'solve') displayQuery = `Solve: ${query}`;
+    else if (action === 'answer') displayQuery = `Final answer for: ${query}`;
+    else if (action === 'practice') displayQuery = `Practice problem for: ${query}`;
+    else if (action === 'ask_ai') displayQuery = `Ask AI about: ${query}`;
 
     const userMsg: Message = { id: Date.now().toString(), role: 'user', content: displayQuery };
     setMessages(prev => [...prev, userMsg]);
@@ -306,7 +343,7 @@ export const ChatInterface: React.FC = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ query: query, session_id: sessionId, action: action })
+        body: JSON.stringify({ query: query, session_id: sessionId, action: action, student_work: studentWork })
       });
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       if (!response.body) throw new Error("No readable stream");
@@ -518,21 +555,22 @@ export const ChatInterface: React.FC = () => {
   const lastUserQuery = [...messages].reverse().find(m => m.role === 'user')?.content || '';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', maxWidth: '900px', margin: '0 auto' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', maxWidth: '100%', margin: '0 auto' }}>
 
       {/* Messages area (Document Flow) */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         {messages.length === 0 && (
-          <div className="empty-state animate-fade-in" style={{ padding: 'var(--space-2xl) 0', maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
-            <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '2.5rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
+          <div className="empty-state animate-fade-in" style={{ flex: 1 }}>
+            <h2 className="text-gradient" style={{ fontSize: '1.8rem', marginBottom: '0.75rem' }}>
               {t('home.headline')}
-            </h1>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: '2.5rem', fontSize: '1.1rem' }}>
-              {t('home.subheadline')}
+            </h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem', maxWidth: '600px' }}>
+              Get verified solutions, step-by-step explanations,
+              and personalized practice.
             </p>
-            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', maxWidth: '800px', justifyContent: 'center' }}>
               {tArray('home.suggestions').map(q => (
-                <button key={q} className="btn btn-outline" onClick={() => { setInput(q); }} style={{ borderRadius: 'var(--radius-full)' }}>
+                <button key={q} className="action-chip" onClick={() => { setInput(q); }}>
                   {q}
                 </button>
               ))}

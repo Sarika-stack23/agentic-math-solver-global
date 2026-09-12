@@ -330,7 +330,7 @@ export const GlobalPracticePanel: React.FC = () => {
   const topics = ['arithmetic', 'algebra', 'geometry', 'trigonometry', 'calculus', 'probability', 'statistics', 'linear_algebra', 'coordinate_geometry', 'number_theory'];
 
   return (
-    <div className="page-container" style={{ overflowY: 'auto', flex: 1 }}>
+    <div className="page-container content-wrapper" style={{ overflowY: 'auto', flex: 1 }}>
       <div className="page-header">
         <h2>{t('practice.title')}</h2>
         <p style={{ fontSize: 'var(--text-sm)' }}>Choose a practice mode below.</p>

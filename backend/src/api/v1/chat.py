@@ -177,7 +177,7 @@ async def chat_stream(
             
             full_response = ""
             try:
-                async for chunk in engine.astream(payload.query, context, chat_history, action=payload.action):
+                async for chunk in engine.astream(payload.query, context, chat_history, action=payload.action, student_work=payload.student_work):
                     if chunk:
                         full_response += chunk
                         yield f"data: {json.dumps({'content': chunk, 'type': 'token'})}\n\n"

@@ -30,10 +30,15 @@ async function signupAndLogin(page: any) {
   // No backend mocks to allow real E2E backend testing
 
   await page.goto('/login');
-  await page.getByRole('button', { name: 'Create one now', exact: true }).click();
+  const signUpToggle = page.getByTestId('auth-toggle');
+  const toggleText = await signUpToggle.textContent();
+  if (toggleText?.includes('Create one now')) {
+    await signUpToggle.click();
+    await page.waitForTimeout(300);
+  }
   const testEmail = `test-${Date.now()}@example.com`;
-  await page.getByPlaceholder('Email').fill(testEmail);
-  await page.getByPlaceholder('Password').fill('Password123!');
+  await page.getByPlaceholder('name@example.com').fill(testEmail);
+  await page.getByPlaceholder('••••••••').fill('Password123!');
   await page.getByRole('button', { name: 'Create Account', exact: true }).click();
   await expect(page).toHaveURL('/');
 }

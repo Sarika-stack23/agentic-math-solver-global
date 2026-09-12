@@ -15,10 +15,10 @@ async function signupAndLogin(page: any) {
     }
   });
   await page.goto('/login');
-  await page.getByRole('button', { name: 'Create one now', exact: true }).click();
+  await page.getByTestId('auth-toggle').click();
   const testEmail = `test-${Date.now()}@example.com`;
-  await page.getByPlaceholder('Email').fill(testEmail);
-  await page.getByPlaceholder('Password').fill('Password123!');
+  await page.getByPlaceholder('name@example.com').fill(testEmail);
+  await page.getByPlaceholder('••••••••').fill('Password123!');
   await page.getByRole('button', { name: 'Create Account', exact: true }).click();
   await page.waitForURL('**/')
   await page.goto('/solve');
@@ -57,7 +57,7 @@ test.describe('Global AI Math Tutor - Core E2E', () => {
 
   test('Application startup and UI', async ({ page }) => {
     // Verify title
-    await expect(page).toHaveTitle(/Math Tutor/i);
+    await expect(page).toHaveTitle(/AI_MATH_TUTOR/i);
     // Verify main input is visible
     await expect(page.locator('input[placeholder*="Enter a math problem"]')).toBeVisible({ timeout: 10000 });
   });

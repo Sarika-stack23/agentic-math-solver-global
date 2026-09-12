@@ -35,7 +35,7 @@ export const HistoryPanel: React.FC = () => {
   );
 
   return (
-    <div className="page-container" style={{ overflowY: 'auto', flex: 1 }}>
+    <div className="page-container content-wrapper" style={{ overflowY: 'auto', flex: 1 }}>
       <div className="page-header">
         <h2>{t('history.title')}</h2>
         <p>{t('history.subtitle')}</p>

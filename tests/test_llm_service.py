@@ -124,5 +124,21 @@ class TestLLMFallbackArchitecture(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual("".join(chunks), "Stream Success")
 
+    def test_6_check_work_student_work_passed(self):
+        # Verify that student_work is properly embedded into the human message when generating
+        messages = self.engine._build_messages(
+            user_input="2x + 3 = 11",
+            context="",
+            chat_history=[],
+            system_prompt="System Prompt",
+            action="check",
+            student_work="2x = 11\nx = 11/2"
+        )
+
+        # Verify that the last message is a HumanMessage
+        human_msg = messages[-1]
+        self.assertIn("Original Problem:\n2x + 3 = 11", human_msg.content)
+        self.assertIn("Student's Attempt:\n2x = 11\nx = 11/2", human_msg.content)
+
 if __name__ == '__main__':
     unittest.main()

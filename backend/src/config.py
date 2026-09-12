@@ -55,6 +55,7 @@ class Settings(BaseSettings):
     # ── Firebase ───────────────────────────────────────────────────────
     use_firebase: bool = True
     firebase_credentials_path: str = ""
+    firebase_project_id: str = ""
 
     # ── ADK Multi-Agent ────────────────────────────────────────────────
     use_adk: bool = True
