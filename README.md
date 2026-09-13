@@ -25,7 +25,7 @@ It is designed for students, educators, and institutions that require mathematic
 The application follows a decoupled client-server architecture, utilizing a multi-agent backend graph for complex reasoning tasks.
 
 ```mermaid
-graph TB
+flowchart TB
     subgraph Frontend [Client Layer]
         UI["React + TS + Vite UI"]
         AuthContext["Firebase Auth Context"]
@@ -50,18 +50,19 @@ graph TB
         Qdrant["Qdrant (Vector DB)"]
     end
 
-    UI -- "REST (Bearer JWT)" --> Middleware
+    UI -->|"REST (Bearer JWT)"| Middleware
     Middleware --> Router
-    Router -- "User Query" --> Planner
+    Router -->|"User Query"| Planner
 
     Planner --> Solver
-    Solver <--> Verifier
+    Solver --> Verifier
+    Verifier --> Solver
     Verifier --> Formatter
     Formatter --> Router
 
-    Solver -- "Tool Calls" --> Groq
-    Solver -- "RAG Queries" --> Qdrant
-    Router -- "Multimodal Input" --> Gemini
+    Solver -->|"Tool Calls"| Groq
+    Solver -->|"RAG Queries"| Qdrant
+    Router -->|"Multimodal Input"| Gemini
 ```
 
 ---
