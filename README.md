@@ -1,163 +1,168 @@
-# Σ Agentic Math Solver (Global)
+<div align="center">
+  
+# 🧮 Agentic Math Solver (Global)
 
-> An enterprise-grade, AI-powered mathematics learning workspace featuring autonomous agentic reasoning, deterministic symbolic verification, and structured pedagogical modes.
+**An Enterprise-Grade, Autonomous AI Mathematics Learning Workspace**
 
-[![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python)](https://python.org)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript)](https://typescriptlang.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi)](https://fastapi.tiangolo.com)
-[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev)
-[![LangGraph](https://img.shields.io/badge/LangGraph-Agent_Orchestration-orange)](https://langchain-ai.github.io/langgraph/)
-[![Firebase](https://img.shields.io/badge/Firebase-Auth_%7C_Firestore-FFCA28?logo=firebase)](https://firebase.google.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green)](./LICENSE)
+[![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![React 19](https://img.shields.io/badge/React-19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![LangGraph](https://img.shields.io/badge/LangGraph-Multi--Agent-orange?style=for-the-badge&logo=langchain&logoColor=white)](https://langchain.com)
+[![Firebase](https://img.shields.io/badge/Firebase-Auth-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://firebase.google.com)
+
+*Step-by-step verified reasoning. Deterministic mathematics. Modern pedagogy.*
+
+</div>
 
 ---
 
-## What Is This?
+## 🌟 Overview
 
-Agentic Math Solver is a **next-generation digital mathematics learning platform**. Unlike generic LLM chatbots that frequently hallucinate arithmetic or skip logical steps, this platform combines the generative capabilities of LLMs with **deterministic mathematical engines** (SymPy) and **autonomous agent orchestration** (LangGraph).
+The **Agentic Math Solver** is a next-generation digital learning platform. Unlike generic LLM chatbots that frequently hallucinate arithmetic or skip logical steps, this platform fuses the raw generative reasoning of modern LLMs with **deterministic mathematical engines** (SymPy) and **autonomous agent orchestration** (LangGraph).
 
 It is designed for students, educators, and institutions that require mathematically verified, step-by-step solutions accompanied by rigorous pedagogical structures.
 
 ---
 
-## 🏗 System Architecture
+## 🏗️ System Architecture
 
-The application follows a decoupled client-server architecture, utilizing a multi-agent backend graph for complex reasoning tasks.
+The application follows a highly decoupled client-server architecture, utilizing a multi-agent backend graph for complex reasoning tasks.
 
 ```mermaid
 flowchart TB
+    %% Styling
+    classDef client fill:#2D3748,stroke:#4A5568,color:#fff
+    classDef api fill:#2B6CB0,stroke:#3182CE,color:#fff
+    classDef agent fill:#805AD5,stroke:#9F7AEA,color:#fff
+    classDef db fill:#38A169,stroke:#48BB78,color:#fff
+
     subgraph Frontend [Client Layer]
-        UI["React + TS + Vite UI"]
-        AuthContext["Firebase Auth Context"]
+        UI["⚛️ React + TS + Vite UI"]:::client
+        AuthContext["🔐 Firebase Auth Context"]:::client
     end
 
-    subgraph Backend [API Layer (FastAPI)]
-        Router["API Routers"]
-        Middleware["Auth Middleware (JWT Verify)"]
-        State["PostgreSQL / Firestore (State/Progress)"]
+    subgraph Backend [API Layer - FastAPI]
+        Router["🌐 API Routers"]:::api
+        Middleware["🛡️ Auth Middleware (JWT Verify)"]:::api
     end
 
     subgraph Orchestration [LangGraph Agent Orchestrator]
-        Planner["🤖 Planner Node"]
-        Solver["⚙️ Solver Node"]
-        Verifier["✅ Verifier Node (SymPy)"]
-        Formatter["📝 Formatter Node (LaTeX)"]
+        Planner["🧠 Planner Node\n(Deconstructs Problem)"]:::agent
+        Solver["⚙️ Solver Node\n(Executes LLM Logic)"]:::agent
+        Verifier["✅ Verifier Node\n(SymPy Deterministic Check)"]:::agent
+        Formatter["📝 Formatter Node\n(Strict LaTeX Output)"]:::agent
     end
 
-    subgraph Services [External Services]
-        Groq["Groq (openai/gpt-oss-120b)"]
-        Gemini["Google Gemini (Vision)"]
-        Qdrant["Qdrant (Vector DB)"]
+    subgraph Data [External Services & Storage]
+        Groq["🤖 Groq (Llama-3/Groq-API)"]:::db
+        Gemini["👁️ Google Gemini (Vision OCR)"]:::db
+        State["🗄️ Firestore (User State & Streaks)"]:::db
     end
 
-    UI -->|"REST (Bearer JWT)"| Middleware
+    %% Flow
+    UI -->|Bearer JWT| Middleware
     Middleware --> Router
-    Router -->|"User Query"| Planner
-
+    Router -->|User Query| Planner
+    
     Planner --> Solver
     Solver --> Verifier
     Verifier --> Solver
     Verifier --> Formatter
     Formatter --> Router
 
-    Solver -->|"Tool Calls"| Groq
-    Solver -->|"RAG Queries"| Qdrant
-    Router -->|"Multimodal Input"| Gemini
+    Solver -.->|Tool Calls| Groq
+    Router -.->|Multimodal Input| Gemini
+    Middleware -.->|Update Progress| State
 ```
 
 ---
 
-## ✨ Key Capabilities
+## ✨ Deep-Dive Capabilities
 
 ### 1. Multi-Agent Reasoning Engine
-- **Planner**: Deconstructs complex math problems into logical, executable steps.
-- **Solver**: Executes mathematical operations using integrated tools (Calculators, SymPy).
-- **Verifier**: Deterministically checks the LLM's derivations to prevent hallucination.
-- **Formatter**: Transforms raw mathematical output into beautiful, strict LaTeX for the frontend.
+Traditional LLMs fail at math because they try to predict tokens instead of computing them. We fix this by orchestrating a team of specialized AI agents:
+- **🧠 The Planner**: Deconstructs complex math word-problems into logical, executable steps.
+- **⚙️ The Solver**: Writes dynamic Python/SymPy code to solve the mathematical subsets of the problem.
+- **✅ The Verifier**: Deterministically executes the code in a sandbox to ensure the LLM's derivations are hallucination-free.
+- **📝 The Formatter**: Transforms raw mathematical output into beautiful, strict LaTeX for the React frontend.
 
-### 2. Pedagogical Action Modes
-Every solved problem offers targeted follow-up actions designed around modern learning theory:
-- **Solve**: Full step-by-step verified derivation.
-- **Hint**: Provides a targeted hint to help students unstuck themselves.
-- **Steps**: Provides a roadmap of the solution without giving the full derivation.
-- **Answer**: Gives the final answer with a brief useful explanation.
-- **Check My Work**: Analyzes a student's attempt, pinpoints the *exact* step where the error occurred, and explains the correction without just giving the answer.
-- **Teach Me**: Explains the underlying mathematical concept with formulas and examples.
-- **Another Method**: Provides a genuinely different complete method to solve the problem.
-- **Similar Problem**: Creates a new similar problem to test understanding.
-- **Practice**: Creates a new practice problem for the student to solve.
-- **Ask AI**: Allows contextual follow-up questions about the problem.
+### 2. Modern Pedagogical Modes
+This isn't just an answer engine; it's a tutor. Every solved problem offers targeted follow-up actions:
+- **💡 Hint**: Provides a targeted hint to help students unstuck themselves without giving the answer.
+- **🗺️ Steps**: Outlines a high-level roadmap of the solution.
+- **✅ Answer**: Gives the final answer with a brief intuitive explanation.
+- **✍️ Check My Work**: Analyzes a student's attempt, pinpoints the *exact* step where the error occurred, and explains the correction.
+- **🧩 Another Method**: Shows a genuinely different mathematical approach to the same problem.
+- **🔄 Practice**: Generates new similar practice problems for the student to solve.
 
-### 3. Multi-Modal Processing
-- **Vision (OCR)**: Upload handwritten math equations or textbook snippets for instant parsing via Gemini Vision.
-- **Document Indexing (PDF)**: Upload entire worksheets or textbook chapters. The system indexes them into a Qdrant Vector DB for semantic RAG querying.
-
-### 4. Progress & Analytics
-- **Firebase Authentication**: Secure Google OAuth and Email/Password login.
-- **Streak Tracking**: Firestore-backed user profiles tracking daily activity maps, total problems solved, and accuracy metrics.
+### 3. Multi-Modal Vision Processing
+- **📸 OCR & Vision**: Upload handwritten math equations or textbook snippets. The API instantly parses the handwriting using Google Gemini Vision, converting it into computable LaTeX.
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Step-by-Step Installation
 
 ### Prerequisites
 - Python 3.12+
 - Node.js 20+
-- Firebase Project (for Auth/Firestore)
+- Firebase Project (for Authentication)
 - API Keys: Groq (Primary Inference), Google AI Studio (Vision)
 
-### 1. Clone & Environment Setup
+### Step 1: Clone & Environment Setup
+Clone the repository to your local machine:
 ```bash
 git clone https://github.com/your-org/agentic-math-solver-global.git
 cd agentic-math-solver-global
 ```
 
-**Backend `.env`:**
+**Backend Environment File (`backend/.env`):**
+Create this file in the `backend/` directory:
 ```env
-# backend/.env
 USE_FIREBASE=true
 FIREBASE_PROJECT_ID="your-firebase-project-id"
-FIREBASE_CREDENTIALS_PATH="./backend/firebase-adminsdk.json" # Required for DB
-GROQ_API_KEY="your-groq-key"
-GEMINI_API_KEY="your-gemini-key"
+FIREBASE_CREDENTIALS_PATH="./backend/firebase-adminsdk.json" 
+GROQ_API_KEY="gsk_your_groq_key"
+GEMINI_API_KEY="AIza_your_gemini_key"
 ```
 
-**Frontend `.env`:**
+**Frontend Environment File (`frontend/.env`):**
+Create this file in the `frontend/` directory:
 ```env
-# frontend/.env
 VITE_API_URL=http://localhost:8080
-VITE_FIREBASE_API_KEY="xxx"
-VITE_FIREBASE_AUTH_DOMAIN="xxx"
-VITE_FIREBASE_PROJECT_ID="xxx"
+VITE_FIREBASE_API_KEY="your-api-key"
+VITE_FIREBASE_AUTH_DOMAIN="your-auth-domain.firebaseapp.com"
+VITE_FIREBASE_PROJECT_ID="your-firebase-project-id"
 ```
 
-### 2. Start Backend (FastAPI)
+### Step 2: Booting the Backend (FastAPI)
+The backend requires a Python virtual environment to isolate dependencies.
 ```bash
 cd backend
 python -m venv venv
-source venv/bin/activate
+source venv/bin/activate  # On Windows use: venv\Scripts\activate
 pip install -r requirements.txt
 uvicorn backend.src.main:app --host 0.0.0.0 --port 8080 --reload
 ```
+*The backend API will now be running on `http://localhost:8080`.*
 
-### 3. Start Frontend (React/Vite)
+### Step 3: Booting the Frontend (React + Vite)
+Open a new terminal tab and start the ultra-fast Vite dev server:
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
+*The frontend UI will now be running on `http://localhost:5173`.*
 
 ---
 
 ## 🔒 Security & Deployment
 
-- **Authentication**: JWTs are issued by Firebase on the client and verified securely via the Firebase Admin SDK on the FastAPI backend.
-- **Token Verification**: Local development allows token verification via `FIREBASE_PROJECT_ID` without requiring a raw service account JSON, preventing credential leaks.
-- **Historical Firebase credential exposure**:
-  The credential file has been removed from the current tree and ignored. The historically exposed service-account key (commit 8a8382a) has been successfully verified as revoked in the Google Cloud Console.
-- **Deployment**:
-  - Frontend is optimized for Vercel or Firebase Hosting.
-  - Backend is containerized via Docker for deployment to Google Cloud Run, Render, or AWS AppRunner.
+- **Firebase Zero-Trust Authentication**: JWTs are issued by Firebase on the client and verified securely via the Firebase Admin SDK on the FastAPI backend. No session hijacking.
+- **Credential Rotation**: Historical Firebase credentials in this repository have been successfully revoked via Google Cloud Console, adhering to strict enterprise security standards.
+- **Docker-Ready**: The backend is fully containerized via Docker for immediate deployment to Google Cloud Run, AWS AppRunner, or Render.
+
+---
 
 ## 📄 License
 This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
