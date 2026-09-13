@@ -86,6 +86,23 @@ Traditional LLMs fail at math because they try to predict tokens instead of comp
 - **✅ The Verifier**: Deterministically executes the code in a sandbox to ensure the LLM's derivations are hallucination-free.
 - **📝 The Formatter**: Transforms raw mathematical output into beautiful, strict LaTeX for the React frontend.
 
+**The Autonomous Reasoning Loop:**
+Because this is an *Agentic* system, the agents can self-correct. If the Verifier detects an error in the Solver's math, it automatically redirects the problem back to the Solver to try again, ensuring high accuracy:
+
+```mermaid
+stateDiagram-v2
+    [*] --> Planner : User Query
+    Planner --> Solver : Plan
+    
+    state "Reasoning Loop" as RL {
+        Solver --> Verifier : Proposed Code/Math
+        Verifier --> Solver : Syntax/Math Error Detected (Retry)
+    }
+    
+    Verifier --> Formatter : Mathematically Valid
+    Formatter --> [*] : Final Answer
+```
+
 ### 2. Modern Pedagogical Modes
 This isn't just an answer engine; it's a tutor. Every solved problem offers targeted follow-up actions:
 - **💡 Hint**: Provides a targeted hint to help students unstuck themselves without giving the answer.
