@@ -100,6 +100,21 @@ This isn't just an answer engine; it's a tutor. Every solved problem offers targ
 
 ---
 
+## 🎓 How to Use the App (User Journey)
+
+Using the Agentic Math Solver is incredibly intuitive. Here is a typical workflow once the app is running:
+
+1. **Ask a Question**: Type any math problem into the chat bar at the bottom (e.g., *"Solve x² − 5x + 6 = 0"* or *"Differentiate sin(x²)"*), or upload an image of a math problem using the attachment icon.
+2. **Review the AI's Work**: The AI will respond with a step-by-step breakdown. Behind the scenes, the Planner broke your problem into parts, the Solver wrote code, and the Verifier checked the math before showing it to you.
+3. **Choose a Follow-up Action**: After the AI responds, interactive "Action Chips" will appear below the message:
+   - Click **"💡 Hint"** if you are stuck on a similar problem.
+   - Click **"📋 Steps"** to see just the high-level roadmap without the answers.
+   - Click **"🧩 Another Method"** to see a different way to solve it.
+   - Click **"✍️ Check My Work"** to type in your own attempt; the AI will find where you made a mistake and gently guide you back on track!
+4. **Graphing (Optional)**: If you ask the AI to graph a function, a beautiful interactive workspace panel will automatically slide out from the right side displaying your SVG graph.
+
+---
+
 ## 🚀 Step-by-Step Installation
 
 ### Prerequisites
